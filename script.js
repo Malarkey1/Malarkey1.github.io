@@ -1,6 +1,6 @@
 /* ===== EDIT: your name and the four "games", listed in the order an employer should visit them ===== */
 const SITE = { name: 'Daniel Rutman', year: 2026, tag: 'Portfolio',
-  bio: "Game Developer and Designer with experience in intuitive gameplay mechanics, creating a focused and engaging design for players to enjoy, and working in Unreal Engine, Unity, and C++. Able to take a concept from vision to reality by focusing on responsive controls, design systems, and practical technical implementation. Driven to make games that delight players and keep them engaged while looking amazing." };   // bio = the short summary on the home page
+  bio: "Hi, I'm Daniel! A Game Programming grad from Humber Polytechnic who loves game design and building PCs." };   // bio = the short summary on the home page
 /* ===== EDIT: flipping the light / dark switch this many times within this many milliseconds makes the Mii say the line ===== */
 const MODE_SPAM = { flips: 8, within: 1500, line: 'My eyes...' };
 const GAMES = [
