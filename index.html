@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daniel Rutman</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="script.js"></script>
+</head>
+<body data-page="home">
+<main class="home">
+  <div class="console">
+    <!-- Top screen: the Mii guide -->
+    <section class="screen top" aria-label="Top screen">
+      <!-- Left: the Mii guide and his speech bubble -->
+      <div class="scene">
+        <div class="stage">
+          <div class="mii" id="mii"><div class="walk"><img class="shadow" src="mii-shadow.png" alt=""><div class="in">
+            <div class="arm l"><img class="up" src="mii-up-l.png" alt=""><img class="fore" src="mii-fore-l.png" alt=""></div>
+            <div class="arm r"><img class="up" src="mii-up-r.png" alt=""><img class="fore" src="mii-fore-r.png" alt=""></div>
+            <img class="body" src="mii-body.png" alt="Daniel's Mii">
+          </div></div></div>
+          <div class="bubble" id="bubble" role="status">
+            <p id="say"></p>
+            <div class="bctl"><button id="skip" type="button">Skip</button><button id="next" type="button">Next &#9654;</button></div>
+          </div>
+        </div>
+      </div>
+      <!-- Middle: the name and the spinning cartridge -->
+      <div class="cartstage">
+        <div class="nameplate"><h1>Daniel Rutman</h1><p>Portfolio</p></div>
+        <div class="cartfloat" aria-hidden="true"><div class="cartflip" id="cartflip"><div class="cart3d">
+          <div class="face front"><div class="art"><img id="cartimg" alt=""></div></div>
+          <div class="face back"></div>
+          <i class="edge et"></i><i class="edge ed"></i><i class="edge er"></i><i class="edge eb"></i><i class="edge el"></i>
+        </div></div></div>
+        <div class="cartshadow" aria-hidden="true"></div>
+        <a class="cartcap" id="cartcap" href="#"></a>
+      </div>
+      <!-- Right: clock and calendar -->
+      <div class="widgets" id="widgets"></div>
+    </section>
+    <div class="hinge"><i></i><i></i><i></i></div>
+    <!-- Touch screen: the four games (built from the GAMES list at the top of script.js) -->
+    <section class="screen bottom" aria-label="Touch screen"><nav class="tiles" id="tiles" aria-label="Pages"></nav></section>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resume | Daniel Rutman</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="script.js"></script>
+</head>
+<body data-page="resume">
+<main class="sub">
+  <h1 class="page-title">Resume</h1>
+
+  <!-- The toggle switches between two versions of your resume. -->
+  <div class="seg" role="tablist" aria-label="Resume perspective" data-active="game">
+    <button role="tab" data-view="it" aria-selected="false">IT</button>
+    <button role="tab" data-view="game" aria-selected="true">Game Dev</button>
+  </div>
+
+  <!-- Each version has a preview picture (images/) and a PDF to download (same folder as this page).
+       To update a version: replace its PDF, then replace its preview picture with page 1 of the new PDF as an image. -->
+
+  <!-- ================= IT VERSION ================= -->
+  <div class="rows rpanel" data-view="it" hidden>
+    <section class="split rsplit">
+      <figure class="pic rpic">
+        <button type="button" class="rprev" data-title="IT resume" aria-label="View the IT resume full screen">
+          <img src="images/resume-it.webp" width="1822" height="2573" loading="lazy" decoding="async" alt="Preview of Daniel Rutman's IT resume">
+          <span class="rexp" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg></span>
+        </button>
+      </figure>
+      <div class="txt">
+        <h2>Summary</h2>
+        <p>Game Programming graduate from Humber Polytechnic with hands-on experience in networking, security systems and custom PC builds. I have deployed an IP camera and access control network for a childcare center, and I have built and supported client systems since 2022. I like tracing a problem to its root cause and leaving the system more reliable than I found it.</p>
+        <div class="btns">
+          <a class="pill" href="Daniel_Rutman_Resume_IT.pdf" download>Download PDF</a>
+          <button type="button" class="pill outline" data-open>View full screen</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="rblock">
+      <h2>Core Skills</h2>
+      <div>
+        <div class="sgroup"><p class="meta">Systems &amp; Infrastructure</p><div class="chips"><span class="chip">Hardware Architecture &amp; Assembly</span><span class="chip">IP Camera Surveillance Networks</span><span class="chip">Access Control Systems (Fob Entry)</span><span class="chip">Network Diagnostics</span></div></div>
+        <div class="sgroup"><p class="meta">Programming &amp; Logic</p><div class="chips"><span class="chip">C++</span><span class="chip">Blueprint Visual Scripting</span><span class="chip">Data Structures</span><span class="chip">Behavior Tree Logic</span><span class="chip">Object-Oriented Analysis &amp; Design</span></div></div>
+        <div class="sgroup"><p class="meta">Core Strengths</p><div class="chips"><span class="chip">Technical Troubleshooting &amp; Root Cause Analysis</span><span class="chip">Systems Thinking</span><span class="chip">Performance Profiling</span><span class="chip">Rapid Prototyping</span><span class="chip">DaVinci Resolve</span><span class="chip">Photoshop</span></div></div>
+      </div>
+    </section>
+
+    <section class="rblock">
+      <h2>Work Experience</h2>
+      <div>
+        <div class="entry">
+          <h3>Security Systems Technician Intern</h3>
+          <p class="meta">Team Childcare Center (Richmond Hill, ON), May 2025 to Sep 2025</p>
+          <ul>
+            <li>Engineered a facility-wide surveillance network by deploying high-definition IP cameras and centralized recording hardware to provide 24/7 site monitoring and safety oversight.</li>
+            <li>Implemented a secure access control system utilizing encrypted fob readers and magnetic locks which restricted unauthorized entry and digitized staff attendance logs.</li>
+            <li>Provisioned network infrastructure for security hardware by configuring dedicated subnets and routing to ensure high-bandwidth video streaming without impacting administrative operations.</li>
+            <li>Validated system integrity through comprehensive failover testing and power-redundancy checks resulting in a 100% reliable security environment for children and staff.</li>
+          </ul>
+        </div>
+        <div class="entry">
+          <h3>PC Builder &amp; Parts Advisor</h3>
+          <p class="meta">Contractor (Vaughan, ON), June 2022 to Present</p>
+          <ul>
+            <li>Architected high-performance hardware configurations by analyzing client budgets and technical requirements to deliver optimized, custom-built systems.</li>
+            <li>Executed precision hardware assembly utilizing advanced cable management and thermal optimization techniques to maximize system longevity and peak performance.</li>
+            <li>Managed full-cycle system deployment by installing operating systems and critical drivers to guarantee 100% functional delivery.</li>
+            <li>Resolved complex hardware and software failures via systematic technical troubleshooting resulting in minimized client downtime and improved system reliability.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="rblock">
+      <h2>Technical Projects</h2>
+      <div class="entry">
+        <h3><a href="https://marwan-e.itch.io/possession-protocol" target="_blank" rel="noopener">Possession Protocol</a></h3>
+        <p class="meta">Unreal Engine 5</p>
+        <ul>
+          <li>Engineered complex real-time synchronization logic utilizing Unreal C++ and Blueprint scripting to manage high-frequency data flow and state consistency in a local multiplayer environment.</li>
+          <li>Architected automated agent behaviors by designing and implementing custom Behavior Trees which optimized CPU cycles and system resource allocation.</li>
+          <li>Improved software stability and performance through deep-level debugging of memory structures and program logic resulting in a significant reduction of system crashes.</li>
+          <li>Validated technical system requirements by conducting iterative stress tests and performance profiling to ensure a seamless, low-latency user experience for the Level Up Showcase.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="rblock">
+      <h2>Education</h2>
+      <div class="entry">
+        <h3>Advanced Diploma: Game Programming</h3>
+        <p class="meta">Humber Polytechnic (Etobicoke, ON), Sep 2023 to Apr 2026</p>
+        <p>Relevant courses: Data Structures, Computer Networking</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================= GAME DEV VERSION ================= -->
+  <div class="rows rpanel" data-view="game">
+    <section class="split rsplit">
+      <figure class="pic rpic">
+        <button type="button" class="rprev" data-title="Game Dev resume" aria-label="View the Game Dev resume full screen">
+          <img src="images/resume-game-dev.webp" width="1822" height="2573" decoding="async" alt="Preview of Daniel Rutman's Game Dev resume">
+          <span class="rexp" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg></span>
+        </button>
+      </figure>
+      <div class="txt">
+        <h2>Summary</h2>
+        <p>Game Programming graduate from Humber Polytechnic focused on gameplay systems, multiplayer and AI in Unreal Engine 5. I prototype quickly, debug carefully, and work closely with artists and designers to turn ideas into polished, playable builds.</p>
+        <div class="btns">
+          <a class="pill" href="Daniel_Rutman_Resume_GameDev.pdf" download>Download PDF</a>
+          <button type="button" class="pill outline" data-open>View full screen</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="rblock">
+      <h2>Core Skills</h2>
+      <div>
+        <div class="sgroup"><p class="meta">Core Strengths</p><div class="chips"><span class="chip">Microsoft Office</span><span class="chip">Gameplay Systems Development</span><span class="chip">Debugging &amp; Testing</span><span class="chip">Rapid Prototyping</span><span class="chip">Systems Thinking</span><span class="chip">Iterative Development</span><span class="chip">DaVinci Resolve</span><span class="chip">Photoshop</span></div></div>
+        <div class="sgroup"><p class="meta">Programming &amp; Engines</p><div class="chips"><span class="chip">C++</span><span class="chip">Unreal Engine</span><span class="chip">Unity</span><span class="chip">GameMaker</span></div></div>
+      </div>
+    </section>
+
+    <section class="rblock">
+      <h2>Work Experience</h2>
+      <div>
+        <div class="entry">
+          <h3>Program Design Associate Intern</h3>
+          <p class="meta">Urban Expeditions (Toronto, Hybrid), Apr 2026 to Sep 2026</p>
+          <ul>
+            <li>Conceptualized and designed a location-based gamified exploration experience, defining core gameplay loops, progression systems, and player engagement mechanics.</li>
+            <li>Rapidly prototyped and documented gameplay concepts to evaluate feasibility and user experience, influencing the project&rsquo;s long-term direction.</li>
+          </ul>
+        </div>
+        <div class="entry">
+          <h3>PC Builder &amp; Parts Advisor</h3>
+          <p class="meta">Contractor (Vaughan, ON), June 2022 to Present</p>
+          <ul>
+            <li>Architected high-performance hardware configurations by analyzing client budgets and technical requirements to deliver optimized, custom-built systems.</li>
+            <li>Ensured peak system reliability and performance through precision assembly, thermal optimization, and rigorous driver stress-testing resulting in 100% functional delivery and ongoing technical support.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="rblock">
+      <h2>Projects</h2>
+      <div>
+        <div class="entry">
+          <h3><a href="https://marwan-e.itch.io/possession-protocol" target="_blank" rel="noopener">Possession Protocol</a></h3>
+          <p class="meta">Gameplay Programmer, Unreal Engine 5</p>
+          <ul>
+            <li>Developed multiplayer systems, player mechanics, and AI behavior using Blueprints, C++, and Behavior Trees, delivering a smooth and interactive gameplay experience.</li>
+            <li>Integrated gameplay features with art assets by collaborating closely with 3D artists in a fast-paced production cycle, resulting in cohesive and polished in-game systems.</li>
+            <li>Debugged gameplay and stability issues by testing and analyzing program structure, greatly reducing bugs, improving stability and performance, and granting smooth gameplay.</li>
+            <li>Demonstrated project quality by presenting at the Level Up Showcase in Downtown Toronto, resulting in industry exposure and recognition.</li>
+          </ul>
+        </div>
+        <div class="entry">
+          <h3><a href="https://malarkeynotfound.itch.io/knuckles-gravity-dome" target="_blank" rel="noopener">Knuckles&rsquo; Gravity Dome</a></h3>
+          <p class="meta">Game Developer, GameMaker</p>
+          <ul>
+            <li>Built core gameplay systems including physics and level mechanics by designing and implementing key features, creating a fully playable game experience.</li>
+            <li>Led cross-disciplinary development by managing game design, sound design, and level programming, resulting in a cohesive and well-rounded project.</li>
+            <li>Delivered a complete game under constraints by developing within a 1 Button Game Jam scope, accomplishing a polished and finished submission.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="rblock">
+      <h2>Education</h2>
+      <div class="entry">
+        <h3>Advanced Diploma: Game Programming</h3>
+        <p class="meta">Humber Polytechnic (Etobicoke, ON), Sep 2023 to Apr 2026</p>
+        <p>Relevant courses: Game Engines 1&ndash;5, Data Structures, Game Design, Object Oriented Design &amp; Analysis, GPU Programming, Computer Graphics, Artificial Intelligence, Computer Networking, Game Physics 1&ndash;3</p>
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>
