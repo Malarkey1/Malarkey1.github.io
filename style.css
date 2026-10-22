@@ -407,3 +407,54 @@ html[data-theme="dark"] .dsi-tile{background:linear-gradient(#f7f3e9,#e9e4d6 50%
 [data-page="about"] .txt{padding-top:1.1rem;padding-bottom:1.2rem}
 [data-page="about"] .txt h2{margin-top:-1.1rem}
 *,*::before,*::after{font-weight:700!important}
+
+/* ---------- Pixel type: crisp, evenly spaced letters ----------
+   Every element is forced to bold (the "bold text" tweak above), but the pixel font has no bold, so the browser used to smear it: strokes
+   swelled, the dot of the "i" fused with its stem and letters crowded unevenly. Faux bold is now off; the real bold of the rounded font is kept.
+   geometricPrecision stops the browser snapping each letter to whole pixels, which is what made some gaps look wider than others.
+   (script.js, "Pixel type", handles the rest: narrow letters and the lowercase i.) */
+*,*::before,*::after{font-synthesis:none}
+html{text-rendering:geometricPrecision}
+.ty-w{white-space:nowrap}
+.ty-i{position:relative}
+.ty-i svg{display:inline-block;vertical-align:baseline;overflow:visible;fill:currentColor}
+.ty-i .ty-sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+
+/* ---------- Status bar: the name and the clock stay on ONE line each; narrow phones drop the extras instead of wrapping ---------- */
+.user,.user span,.status,#clock,.mode{white-space:nowrap;flex:none}
+.status{margin-left:auto;text-align:right}
+@media(max-width:560px){
+  .topbar{gap:0.5rem}
+  .net,.cw{display:none}
+  .user{gap:0.4rem;font-size:0.95rem}
+  .user img{height:1.875rem}
+  .status{gap:0.5rem;font-size:0.85rem}
+}
+@media(max-width:380px){.cd{display:none}}            /* very narrow: just the time */
+@media(max-width:340px){.status .ico{display:none}}   /* tiny: the battery icon goes too */
+
+/* ---------- Home: summary card sized for a full paragraph ---------- */
+.widgets{min-width:0}
+.hint{width:min(100%,24rem)}
+.hint p{padding:0.6rem 0.9rem 0.75rem;font:700 0.8rem/1.45 var(--font);overflow-wrap:break-word;text-wrap:pretty}
+@media(min-width:821px){.widgets{zoom:var(--fit,1);padding:0.875rem 0.75rem 0.875rem 0.5rem}}
+@media(min-width:821px) and (max-height:800px){.hint p{font-size:0.74rem;line-height:1.38;padding:0.5rem 0.8rem 0.6rem}}   /* short laptop screens: a little tighter */   /* the card shrinks along with everything else when the window is short */
+
+/* ---------- Phones on their side: a properly sized Mii ---------- */
+@media(orientation:landscape) and (max-height:560px){
+  .mii{--u:0.0215rem}   /* about 120 x 170 px (it was squeezed to roughly 85 x 120 px, or less) */
+}
+
+/* ---------- Resume skills: a logo (or a small picture) over a short label ---------- */
+.rblock ul.skills{display:grid;grid-template-columns:repeat(auto-fill,minmax(6.6rem,1fr));gap:1.1rem 0.5rem;margin:0.8rem 0 0;padding:0;list-style:none}
+.rblock .skills>li{margin:0;display:grid;justify-items:center;align-content:start;gap:0.45rem;text-align:center}
+.skill img{display:block;width:3.5rem;height:3.5rem;filter:drop-shadow(0 0.1875rem 0 rgba(0,0,0,.18))}
+.skill span{max-width:6.25rem;font:700 0.74rem/1.2 var(--font);color:var(--ink)}
+
+/* ---------- Page banner: the flavour text ("Level Select", "Character Select") stays on one line ---------- */
+.banner small{white-space:nowrap}
+
+/* ---------- Cartridge picture, "whole photo" mode: nothing is cropped; a blurred copy of the photo fills the leftover space ---------- */
+.art.whole{position:relative}
+.art.whole::before{content:"";position:absolute;inset:-15%;background:var(--bg) center/cover;filter:blur(0.4rem) brightness(0.85) saturate(1.15)}
+.art.whole img{position:relative;object-fit:contain}

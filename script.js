@@ -1,6 +1,6 @@
 /* ===== EDIT: your name and the four "games", listed in the order an employer should visit them ===== */
 const SITE = { name: 'Daniel Rutman', year: 2026, tag: 'Portfolio',
-  bio: "Hi, I'm Daniel! A Game Programming grad from Humber Polytechnic who loves game design and building PCs." };   // bio = the short summary on the home page
+  bio: "Game Developer and Designer with experience in intuitive gameplay mechanics, creating a focused and engaging design for players to enjoy, and working in Unreal Engine, Unity, and C++. Able to take a concept from vision to reality by focusing on responsive controls, design systems, and practical technical implementation. Driven to make games that delight players and keep them engaged while looking amazing." };   // bio = the summary card on the home page (the card grows to fit it)
 /* ===== EDIT: flipping the light / dark switch this many times within this many milliseconds makes the Mii say the line ===== */
 const MODE_SPAM = { flips: 8, within: 1500, line: 'My eyes...' };
 const GAMES = [
@@ -17,11 +17,16 @@ const GAMES = [
     say: "Ready to talk? Say hello here!",
     tour: "Ready to talk? Contact Me and say hello!" }
 ];
-/* ===== EDIT: pictures for the spinning cartridge (swap in your own files; add as many as you like per category) ===== */
+/* ===== EDIT: pictures for the spinning cartridge (swap in your own files; add as many as you like per category) =====
+   An entry is either a file name, or [file name, crop focus, 'whole'].
+   The cartridge screen is almost square, so wide photos are cropped to fit; the crop focus ("x% y%", 50% 50% = centre) picks which part
+   stays in view. Add 'whole' as the third item to show the entire photo instead (nothing is cropped; the space above and below is
+   filled with a soft blurred copy of the photo). Use it for a photo where everybody has to be in frame. */
 const PICS = {
   experience: ['images/experience-1.svg', 'images/experience-2.svg', 'images/experience-3.svg'],
   resume: ['images/resume-1.svg', 'images/resume-2.svg', 'images/resume-3.svg'],
-  about: ['images/about-1.svg', 'images/about-2.svg', 'images/about-3.svg'],
+  about: [['images/aboutP1.webp', '14% 50%'], ['images/aboutP2.webp', '50% 50%'], ['images/aboutP3.webp', '50% 45%'],
+          ['images/aboutP4.webp', '50% 50%', 'whole'], ['images/aboutP5.jpg', '50% 42%']],
   contact: ['images/contact-1.svg', 'images/contact-2.svg', 'images/contact-3.svg']
 };
 
@@ -39,6 +44,10 @@ const SFX = {
   swap: ['cartPicSwap.wav', 0.1]   // the picture on the cartridge changing by itself   
 };
 const LOOPS = ['grab', 'pen', 'erase'];   // the sounds that loop; every other sound plays once
+/* Sounds that always play through a plain <audio> tag, even on a server. A tag's loop restarts with a tiny gap, while the Web Audio loop is
+   gapless (and so sounds noticeably faster). Opening the site from a folder can only use tags, so this makes the deployed site loop at the
+   same pace as the local one. Remove 'grab' from this list to get the gapless loop back. */
+const AUDIO_TAG = ['grab'];
 const PITCH = { spin: .1 };               // random pitch for each play: .1 = anywhere from 10% lower to 10% higher (about 1.7 semitones). Add other sounds here too
 /* Sounds are decoded with the Web Audio API so loops are seamless and stop instantly. If that is not possible
    (for example the page is opened straight from a folder instead of a server) it falls back to plain <audio> tags. */
@@ -47,7 +56,7 @@ const Sfx = (() => {
   let ac = null;
   const buf = {}, loopBuf = {}, lead = {}, tags = {}, pools = {}, loops = {};   // buf[n]: decoded sound (null while loading, false = use an <audio> tag)
   const wake = () => {
-    try { if (!ac && AC) ac = new AC({ latencyHint: 'interactive' }); if (ac && ac.state === 'suspended') ac.resume().catch(() => {}); } catch (e) { ac = null; }
+    try { if (!ac && AC) ac = new AC({ latencyHint: 'interactive' }); if (ac && ac.state !== 'running' && ac.state !== 'closed') ac.resume().catch(() => {}); } catch (e) { ac = null; }
     return ac;
   };
   const tag = n => tags[n] || (tags[n] = new Audio(url(n)));
@@ -77,11 +86,12 @@ const Sfx = (() => {
   };
   const load = (...names) => names.forEach(n => {
     if (!SFX[n] || n in buf) return;
-    if (!wake()) { buf[n] = false; fallback(n); return; }
+    if (AUDIO_TAG.includes(n) || !wake()) { buf[n] = false; fallback(n); return; }
     buf[n] = null;
     fetch(url(n)).then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(d => ac.decodeAudioData(d))
       .then(b => { if (LOOPS.includes(n) && SFX[n][2]) loopBuf[n] = seamless(b, SFX[n][2]); lead[n] = leadOf(b); buf[n] = b; }).catch(() => { buf[n] = false; fallback(n); });
   });
+  const live = new Set();   // one-shot sounds that are still playing, so they can all be cut off when the page is hidden or left
   const voice = (n, vol, looping) => {
     const c = wake(), s = c.createBufferSource(), g = c.createGain(), r = SFX[n][2];
     const vv = SFX[n][1] * vol, seam = looping && r;   // seam: a loop with a [from, to] steady part
@@ -97,7 +107,12 @@ const Sfx = (() => {
     const rate = looping ? 1 : pitch(n); s.playbackRate.value = rate;
     s.connect(g); g.connect(c.destination); s.start(0, off, dur);
     if (dur) { const t = c.currentTime, real = dur / rate; g.gain.setValueAtTime(vv, t + Math.max(0, real - .006)); g.gain.linearRampToValueAtTime(0, t + real); }   // 6 ms fade so a cut-off end doesn't click
-    return { stop() { const t = c.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + .015); try { s.stop(t + .02); } catch (e) {} } };   // 15 ms fade so it cuts off without a click
+    const h = {
+      stop() { const t = c.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + .015); try { s.stop(t + .02); } catch (e) {} },   // 15 ms fade so it cuts off without a click
+      kill() { try { s.stop(); } catch (e) {} try { g.disconnect(); } catch (e) {} }   // instant: used when the page is being hidden or left
+    };
+    if (!looping) { live.add(h); s.onended = () => live.delete(h); }
+    return h;
   };
   const tagVoice = (n, vol, looping) => {
     const a = tag(n).cloneNode(), r = looping && SFX[n][2];
@@ -124,18 +139,152 @@ const Sfx = (() => {
     if (buf[n] === false && !looping) { playTag(n, vol); return null; }
     return buf[n] ? voice(n, vol, looping) : buf[n] === false ? tagVoice(n, vol, looping) : null;
   };
+  let muted = false, hushUntil = 0;   // muted: the speaker button in the status bar flips this (and remembers it between pages)
+  const readMuted = () => { try { muted = localStorage.getItem('sound') === 'off'; } catch (e) {} };
+  readMuted();
   const api = {
     load, unlock() { wake(); },
-    play(n, vol = 1) { start(n, vol, false); },
-    loop(n, vol = 1) { if (!loops[n]) { const v = start(n, vol, true); if (v) loops[n] = v; } },
+    play(n, vol = 1) { if (!muted && performance.now() >= hushUntil) start(n, vol, false); },
+    loop(n, vol = 1) { if (!muted && performance.now() >= hushUntil && !loops[n]) { const v = start(n, vol, true); if (v) loops[n] = v; } },
     stop(n) { if (loops[n]) { loops[n].stop(); delete loops[n]; } },
-    stopAll() { Object.keys(loops).forEach(api.stop); }
+    stopAll() { Object.keys(loops).forEach(api.stop); },
+    // cut off EVERYTHING that is playing, including one-shot sounds like the menu select: used when the page is hidden or left, so a page that is
+    // frozen in the browser's back/forward cache can't finish (or replay) a sound when you come back to it
+    silence() {
+      api.stopAll();
+      live.forEach(v => v.kill()); live.clear();
+      Object.values(pools).forEach(P => P.els.forEach(a => { clearTimeout(a.cut); a.pause(); }));
+    },
+    hush(ms = 350) { hushUntil = performance.now() + ms; },   // ignore new sounds for a moment (a page that was just brought back can fire stray hover / focus events)
+    resync() { readMuted(); },                                // another page may have changed the sound setting while this one was frozen
+    get muted() { return muted; },
+    setMuted(m) { muted = !!m; try { localStorage.setItem('sound', muted ? 'off' : 'on'); } catch (e) {} if (muted) api.stopAll(); }
   };
   return api;
 })();
 Sfx.load('hover', 'select', 'pick', 'lightOn', 'lightOff');
 // browsers only start audio after a real click / key press, so each of those wakes it up in advance (otherwise the first sound can be late)
 ['pointerdown', 'pointerup', 'keydown', 'touchend'].forEach(ev => addEventListener(ev, () => Sfx.unlock(), { capture: true, passive: true }));
+
+/* ---------- Pixel type: tidies the letter spacing and the lowercase "i" of the pixel font (DotGothic16) ----------
+   A web font can't be edited from CSS, so this measures the real font in the browser (with a canvas) and then:
+     1. narrow letters (i, l, t, r, j, and punctuation) that sit in too much space are tightened to the typical gap between letters
+     2. the lowercase "i" is redrawn from the font's own shape with the top of the stem trimmed, so the dot is clearly separated
+   If the font doesn't load, or anything goes wrong, the text is simply left exactly as it was. */
+const Type = (() => {
+  const FONT = 'DotGothic16',
+        DOT_GAP = 2,       // EDIT: gap between the dot and the stem of the "i", counted in pixel-dots (the font's own is usually 1; 3 = even more air)
+        TIGHT = 1.15,      // a letter is only tightened if its side space is more than this many times the typical amount
+        MAX_TIGHT = .22,   // never pull a letter in by more than this much (in em) on either side
+        S = 240;           // the size the letters are measured at
+  const cv = document.createElement('canvas'), ctx = cv.getContext('2d', { willReadFrequently: true }), cache = {};
+  const fontStr = '400 ' + S + 'px "' + FONT + '"', SAMPLE = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let ok = false, target = 0, iSvg = null;
+  const bearings = ch => {   // empty space on each side of a letter, in em (l, r), and the width of its ink
+    if (cache[ch]) return cache[ch];
+    ctx.font = fontStr; const m = ctx.measureText(ch);
+    return (cache[ch] = { l: -m.actualBoundingBoxLeft / S, r: (m.width - m.actualBoundingBoxRight) / S, ink: m.actualBoundingBoxRight + m.actualBoundingBoxLeft });
+  };
+  // the "i": scan its pixels, then rebuild it as a vector shape with a shorter stem (same dot, same width, same baseline)
+  const buildI = () => {
+    const W = S * 2, H = S * 2, x0 = S >> 1, y0 = Math.round(S * 1.3);
+    cv.width = W; cv.height = H; ctx.font = fontStr; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left'; ctx.fillStyle = '#000'; ctx.fillText('i', x0, y0);
+    const adv = ctx.measureText('i').width, px = ctx.getImageData(0, 0, W, H).data, rows = [];
+    for (let y = 0; y < H; y++) {
+      const runs = []; let a = -1;
+      for (let x = 0; x < W; x++) { const on = px[(y * W + x) * 4 + 3] > 127; if (on && a < 0) a = x; else if (!on && a >= 0) { runs.push([a, x]); a = -1; } }
+      if (a >= 0) runs.push([a, W]); rows.push(runs);
+    }
+    const segs = []; let st = -1;   // stretches of rows that have ink: the dot on top, the stem below
+    for (let y = 0; y <= H; y++) { const on = y < H && rows[y].length > 0; if (on && st < 0) st = y; else if (!on && st >= 0) { segs.push([st, y]); st = -1; } }
+    if (segs.length < 2) return null;
+    const dot = segs[0], stem = segs[segs.length - 1], u = dot[1] - dot[0], gap = stem[0] - dot[1], stemH = stem[1] - stem[0];
+    const cut = Math.max(0, Math.min(DOT_GAP * u - gap, stemH - 3 * u));   // how much to trim off the top of the stem
+    if (cut < 1) return null;
+    const top = Math.round(stem[0] + cut), rects = [];
+    let start = 0, prev = '[]';
+    for (let y = 0; y <= H; y++) {   // rows with identical ink become one rectangle each
+      const key = y < H ? JSON.stringify(rows[y]) : '[]';
+      if (key === prev) continue;
+      if (prev !== '[]') for (const [a, b] of rows[start]) { const ya = start >= stem[0] ? Math.max(start, top) : start; if (y > ya) rects.push([a, ya, b, y]); }
+      start = y; prev = key;
+    }
+    if (!rects.length) return null;
+    const minX = Math.min(...rects.map(r => r[0])), maxX = Math.max(...rects.map(r => r[2])), minY = Math.min(...rects.map(r => r[1]));
+    const l = minX - x0, r = x0 + adv - maxX, t = target * S, L = l > t * TIGHT ? t : l, R = r > t * TIGHT ? t : r;   // keep the same side space as every other letter
+    const vx = minX - L, vw = maxX - minX + L + R, vh = y0 - minY;
+    const d = rects.map(([a, b, c, e]) => `M${a - vx} ${b - minY}h${c - a}v${e - b}h${a - c}z`).join('');
+    return `<svg viewBox="0 0 ${vw} ${vh}" style="width:${(vw / S).toFixed(4)}em;height:${(vh / S).toFixed(4)}em" aria-hidden="true" focusable="false"><path d="${d}"/></svg>`;
+  };
+  const setup = () => {
+    if (!document.fonts || !ctx || ctx.measureText('i').actualBoundingBoxRight === undefined) return false;
+    if (![...document.fonts].some(f => f.family.replace(/["']/g, '') === FONT && f.status === 'loaded')) return false;   // font really loaded?
+    const side = [];
+    for (const ch of SAMPLE) { const b = bearings(ch); if (b.ink > 0) side.push(b.l, b.r); }
+    if (side.length < 40) return false;
+    side.sort((a, b) => a - b); target = Math.max(0, side[side.length >> 1]);   // the typical empty space beside a letter
+    if (!(target < .3)) return false;
+    try { iSvg = buildI(); } catch (e) { iSvg = null; }
+    return true;
+  };
+  const ready = (async () => {
+    try {
+      await Promise.race([document.fonts.load('400 ' + S + 'px "' + FONT + '"', SAMPLE), new Promise(r => setTimeout(r, 4000))]);
+      ok = setup();
+    } catch (e) { ok = false; }
+    return ok;
+  })();
+  const tuneNode = n => {
+    const el = n.parentElement, text = n.nodeValue;
+    if (!el || !text.trim() || el.closest('.ty-k,.ty-i,script,style,textarea')) return;
+    const cs = getComputedStyle(el);
+    if (cs.fontFamily.split(',')[0].replace(/["'\s]/g, '') !== FONT) return;
+    const up = cs.textTransform === 'uppercase', shadow = cs.textShadow !== 'none' && !/\)\s*,/.test(cs.textShadow) ? cs.textShadow : '';
+    const out = document.createDocumentFragment(); let run = '', any = false;
+    const flush = () => { if (run) { out.appendChild(document.createTextNode(run)); run = ''; } };
+    const parts = text.split(/(\s+)/); let lastW = -1;
+    parts.forEach((w, i) => { if (w && !/^\s+$/.test(w)) lastW = i; });   // the last word: its final letter must NOT be pulled in on the right
+    for (let wi = 0; wi < parts.length; wi++) {                          // (a box sized to its text, like a pill label, would come out a hair too narrow and wrap)
+      const word = parts[wi];
+      if (!word || /^\s+$/.test(word)) { run += word; continue; }
+      const wf = document.createDocumentFragment(); let wrun = '', changed = false, hasI = false;
+      const wflush = () => { if (wrun) { wf.appendChild(document.createTextNode(wrun)); wrun = ''; } };
+      const chars = [...word];
+      for (let ci = 0; ci < chars.length; ci++) {
+        const ch = chars[ci], shown = up ? ch.toUpperCase() : ch, atEnd = wi === lastW && ci === chars.length - 1;
+        if (!/^[\x21-\x7e]$/.test(shown)) { wrun += ch; continue; }   // only plain keyboard characters (the font's fallback glyphs can't be measured)
+        if (shown === 'i' && iSvg) {
+          wflush(); const sp = document.createElement('span'); sp.className = 'ty-i';
+          sp.innerHTML = iSvg + '<span class="ty-sr">i</span>';   // the real letter stays in the page (hidden) so copy / paste and screen readers still get it
+          if (shadow) sp.firstChild.style.filter = 'drop-shadow(' + shadow + ')';
+          wf.appendChild(sp); changed = hasI = true; continue;
+        }
+        const b = bearings(shown);
+        const ml = b.ink > 0 && b.l > target * TIGHT ? Math.max(target - b.l, -MAX_TIGHT) : 0, mr = !atEnd && b.ink > 0 && b.r > target * TIGHT ? Math.max(target - b.r, -MAX_TIGHT) : 0;
+        if (ml || mr) { wflush(); const sp = document.createElement('span'); sp.className = 'ty-k'; sp.style.margin = `0 ${mr.toFixed(3)}em 0 ${ml.toFixed(3)}em`; sp.textContent = ch; wf.appendChild(sp); changed = true; }
+        else wrun += ch;
+      }
+      wflush();
+      if (!changed) { run += word; continue; }
+      flush(); any = true;
+      if (hasI) { const w = document.createElement('span'); w.className = 'ty-w'; w.appendChild(wf); out.appendChild(w); }   // a redrawn "i" never gets split from its word at a line break
+      else out.appendChild(wf);
+    }
+    if (!any) return;
+    flush(); n.replaceWith(out);
+  };
+  return {
+    ready,
+    tune(scope) {   // tidies the text inside an element; safe to call again after you change that text
+      if (!ok || !scope) return;
+      try {
+        const w = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT), nodes = [];
+        for (let n; (n = w.nextNode());) nodes.push(n);
+        nodes.forEach(tuneNode);
+      } catch (e) {}
+    }
+  };
+})();
 
 /* ---------- Runs immediately: did we arrive through a transition? ---------- */
 const root = document.documentElement;
@@ -175,6 +324,8 @@ addEventListener('DOMContentLoaded', () => {
   };
   ICON.sun = '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
   ICON.moon = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.5 14.5A9 9 0 0 1 9.5 3.5a9 9 0 1 0 11 11z"/></svg>';
+  ICON.vol = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M2.5 9.5h3.8L12 4.8v14.4l-5.700-4.700H2.500z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M15.4 9a4.200 4.200 0 0 1 0 6M18.300 6.200a8 8 0 0 1 0 11.600"/></svg>';
+  ICON.mute = '<svg viewBox="0 0 24 24"><path fill="currentColor" d="M2.5 9.5h3.8L12 4.8v14.4l-5.700-4.700H2.500z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M15.800 9.500l5 5M20.800 9.500l-5 5"/></svg>';
   const WIFI = '<svg class="ico" viewBox="0 0 20 16" fill="currentColor"><rect x="1" y="11" width="3" height="4" rx="1"/><rect x="6" y="8" width="3" height="7" rx="1"/><rect x="11" y="5" width="3" height="10" rx="1"/><rect x="16" y="1" width="3" height="14" rx="1"/></svg>';
   const BATT = '<svg class="ico" viewBox="0 0 26 14"><rect x="1" y="1" width="21" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="24" y="4.5" width="2" height="5" rx="1" fill="currentColor"/><rect x="3.5" y="3.5" width="14" height="7" rx="1.5" fill="currentColor"/></svg>';
   const cart = g => `<span class="cart" style="--c:${g.color}"><span class="lab">${ICON[g.icon]}</span></span>`;
@@ -183,8 +334,12 @@ addEventListener('DOMContentLoaded', () => {
   document.body.insertAdjacentHTML('afterbegin',
     `<header class="topbar"><a class="user" href="index.html"><img src="mii-head.png" alt=""><span>${esc(SITE.name)}</span></a>
      <span class="net">${WIFI}<b>${esc(SITE.tag)}</b></span>
-     <div class="status"><span id="clock"></span><button class="mode" id="mode" type="button"></button>${BATT}</div></header>`);
-  const tickClock = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); $('#clock').textContent = `${p(d.getDate())}/${p(d.getMonth() + 1)} (${d.toLocaleDateString([], { weekday: 'short' })}) ${p(d.getHours())}:${p(d.getMinutes())}`; };
+     <div class="status"><span id="clock"></span><button class="mode" id="snd" type="button"></button><button class="mode" id="mode" type="button"></button>${BATT}</div></header>`);
+  const tickClock = () => {   // same text as before; the pieces are separate so a narrow phone can drop the date and weekday (see style.css)
+    const d = new Date(), p = n => String(n).padStart(2, '0'), clock = $('#clock');
+    clock.innerHTML = `<span class="cd">${p(d.getDate())}/${p(d.getMonth() + 1)}</span> <span class="cw">(${d.toLocaleDateString([], { weekday: 'short' })})</span> <span class="ct">${p(d.getHours())}:${p(d.getMinutes())}</span>`;
+    Type.tune(clock);
+  };
   tickClock(); setInterval(tickClock, 15000);
   const modeBtn = $('#mode');
   let modeSpam = () => {};   // the Mii on the home page fills this in
@@ -197,6 +352,10 @@ addEventListener('DOMContentLoaded', () => {
   const paintMode = () => { const dark = root.dataset.theme === 'dark'; modeBtn.innerHTML = ICON[dark ? 'moon' : 'sun']; modeBtn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode'); };
   modeBtn.onclick = () => { const t = root.dataset.theme === 'dark' ? 'light' : 'dark'; root.dataset.theme = t; try { localStorage.setItem('theme', t); } catch (err) {} paintMode(); Sfx.play(t === 'dark' ? 'lightOff' : 'lightOn'); countFlip(); };
   paintMode();
+  const sndBtn = $('#snd');   // the speaker button next to the light / dark button: mutes every sound, and is remembered between pages
+  const paintSnd = () => { const off = Sfx.muted; sndBtn.innerHTML = ICON[off ? 'mute' : 'vol']; sndBtn.setAttribute('aria-label', off ? 'Turn sound on' : 'Turn sound off'); };
+  sndBtn.onclick = () => { Sfx.setMuted(!Sfx.muted); paintSnd(); if (!Sfx.muted) Sfx.play('pick'); };   // a little blip confirms it is back on
+  paintSnd();
   try { gutters(); } catch (err) {}   // decorative: must never block the page
 
   if (!isHome) {
@@ -310,8 +469,8 @@ addEventListener('DOMContentLoaded', () => {
           const h = b.closest('.txt').querySelector('.handle');
           if (h) { const r = document.createRange(); r.selectNodeContents(h); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
         }
-        lab.textContent = ok ? 'Copied!' : 'Copy failed';
-        clearTimeout(timer); timer = setTimeout(() => { lab.textContent = label; }, 1600);
+        lab.textContent = ok ? 'Copied!' : 'Copy failed'; Type.tune(lab);
+        clearTimeout(timer); timer = setTimeout(() => { lab.textContent = label; Type.tune(lab); }, 1600);
       });
     });
     document.addEventListener('pointerover', e => { if (e.pointerType === 'touch') return; const t = e.target.closest('.dsi'); if (t && !t.contains(e.relatedTarget)) Sfx.play('hover'); });
@@ -520,23 +679,43 @@ addEventListener('DOMContentLoaded', () => {
   /* ---------- Home: spinning cartridge (random picture from the hovered category; drag to spin) ---------- */
   function cartridge() {
     const img = $('#cartimg'), cap = $('#cartcap'), flip = $('#cartflip'), body = $('.cart3d'), grab = $('.cartfloat');
-    let cat = null, last = '';
+    let cat = null, last = '', swapId = 0;
     Sfx.load('spin', 'swap');
+    const norm = p => typeof p === 'string' ? { src: p, pos: '50% 50%', whole: false } : { src: p[0], pos: p[1] || '50% 50%', whole: p[2] === 'whole' };   // PICS entry -> { file, crop focus, show whole photo? }
+    /* Weighted pick: a picture that has not been shown yet is far more likely to come up than one that already has, and every time one is
+       shown its chance drops. A picture shown n times has weight 1 / (1 + n) ^ FALLOFF, so with 2 a never-shown picture is 4x as likely as one
+       shown once, 9x as likely as one shown twice, and so on. Raise FALLOFF to favour fresh pictures even harder, 0 = plain random. The counts
+       are kept for the browser tab's session, so going to another page and back doesn't start the favouring over. */
+    const FALLOFF = 2, SEEN = 'cartSeen'; let seen = {};
+    try { seen = JSON.parse(sessionStorage.getItem(SEEN) || '{}') || {}; } catch (e) {}
     const pick = () => {
-      const l = PICS[cat] || []; if (!l.length) return '';
-      let s; do { s = l[Math.floor(Math.random() * l.length)]; } while (l.length > 1 && s === last);
-      return (last = s);
+      const all = (PICS[cat] || []).map(norm); if (!all.length) return null;
+      const fresh = all.filter(p => p.src !== last), pool = fresh.length ? fresh : all;   // never the same picture twice in a row (unless that is all there is)
+      const w = pool.map(p => Math.pow(1 + (seen[p.src] || 0), -FALLOFF));
+      let r = Math.random() * w.reduce((a, b) => a + b, 0), p = pool[pool.length - 1];
+      for (let i = 0; i < pool.length; i++) { r -= w[i]; if (r <= 0) { p = pool[i]; break; } }
+      seen[p.src] = (seen[p.src] || 0) + 1;
+      try { sessionStorage.setItem(SEEN, JSON.stringify(seen)); } catch (e) {}
+      last = p.src; return p;
     };
     const swap = quiet => {   // quiet: no sound (used when you hover a different tab, which also changes the picture)
-      const s = pick(); if (!s) return;
+      const p = pick(); if (!p) return;
+      const me = ++swapId;
       if (!reduce) flip.animate([{ transform: 'scale(1) rotate(0)' }, { transform: 'scale(.7) rotate(-9deg)', offset: .4 }, { transform: 'scale(1) rotate(0)' }], { duration: 480, easing: 'ease-out' });
-      setTimeout(() => { img.src = s; if (!quiet) Sfx.play('swap'); }, reduce ? 0 : 190);   // the sound lands the moment the picture changes
+      // the new picture is loaded and decoded while the cartridge shrinks, so a big photo never pops in half-drawn
+      const ld = new Image(); ld.src = p.src;
+      const decoded = ld.decode ? ld.decode().catch(() => {}) : Promise.resolve();
+      Promise.all([decoded, sleep(reduce ? 0 : 190)]).then(() => {
+        if (me !== swapId) return;   // a newer swap has started
+        const art = img.parentElement; art.classList.toggle('whole', p.whole); art.style.setProperty('--bg', p.whole ? 'url("' + p.src + '")' : 'none');
+        img.style.objectPosition = p.pos; img.src = p.src; if (!quiet) Sfx.play('swap');   // the sound lands the moment the picture changes
+      });
     };
     setInterval(() => { if (!document.hidden && cat) swap(); }, 4500);
 
     // slow turn by default; dragging spins it faster and a flick lets it coast; changing category resets it to face front
     const BASE = reduce ? 0 : 52;
-    let angle = 0, vel = BASE, dragging = false, px = 0, pt = 0, settle = 0, t0 = performance.now(), turnLo = 0, turnHi = 0, origin = 0, prevTurn = 0; const played = new Set();
+    let angle = 0, vel = BASE, dragging = false, px = 0, pt = 0, settle = 0, t0 = performance.now(), turnLo = 0, turnHi = 0, origin = 0, prevTurn = 0, peak = 0, way = 0; const played = new Set();
     const loop = now => {
       requestAnimationFrame(loop);
       const dt = Math.min(.05, (now - t0) / 1000); t0 = now;
@@ -546,10 +725,15 @@ addEventListener('DOMContentLoaded', () => {
       body.style.transform = `rotateY(${angle}deg)`;
       // one sound each time the slim side of the cartridge points at you (twice per full turn: 90, 270, 450 degrees ...), but only while
       // YOU are spinning it (dragging, then coasting). The slow idle turn stays silent. Each edge only counts once per spin, so wiggling
-      // it back and forth across the same spot doesn't repeat the sound, and a small nudge (under 45 degrees) is ignored.
+      // it back and forth across the same spot doesn't repeat the sound, and a small nudge (under 20 degrees) is ignored.
+      // Turning the cartridge round (grabbing it mid-spin and pulling the other way) counts as a NEW spin: every edge rings again.
       const forced = dragging || (settle <= 0 && Math.abs(vel) > BASE + 25), turn = Math.floor((angle - 90) / 180);
-      if (!forced) { turnLo = turnHi = prevTurn = turn; origin = angle; played.clear(); }
+      if (!forced) { turnLo = turnHi = prevTurn = turn; origin = peak = angle; way = 0; played.clear(); }
       else {
+        const d = angle - peak;   // peak: the furthest point reached in the current direction (way: +1 / -1 / 0 = not moving yet)
+        if (!way) { if (Math.abs(d) >= 2) { way = Math.sign(d); peak = angle; } }
+        else if (d * way > 0) peak = angle;
+        else if (-d * way >= 6) { origin = peak; peak = angle; way = -way; played.clear(); }   // pulled back 6+ degrees: new spin from the turning point
         if (turn !== prevTurn) {   // crossed an edge, in either direction (forwards or backwards)
           const edge = Math.max(turn, prevTurn);
           if (!played.has(edge) && Math.abs(angle - origin) >= 20) { Sfx.play('spin'); played.add(edge); }
@@ -566,7 +750,12 @@ addEventListener('DOMContentLoaded', () => {
     });
     const up = () => { dragging = false; };
     grab.addEventListener('pointerup', up); grab.addEventListener('pointercancel', up);
-    return { show(id) { if (id === cat) return; if (cat) settle = .5; cat = id; const game = GAMES.find(x => x.id === id); cap.textContent = game.title; cap.href = game.href; swap(true); } };
+    return { show(id) {
+      if (id === cat) return; if (cat) settle = .5; cat = id;
+      const game = GAMES.find(x => x.id === id); cap.textContent = game.title; cap.href = game.href; Type.tune(cap);
+      (PICS[id] || []).forEach(p => { new Image().src = norm(p).src; });   // warm the cache so the first swaps are instant
+      swap(true);
+    } };
   }
 
   /* ---------- Home: game tiles + the Mii guide ---------- */
@@ -732,7 +921,7 @@ addEventListener('DOMContentLoaded', () => {
     mii.addEventListener('pointerup', dropHim); mii.addEventListener('pointercancel', dropHim);
     const fitHome = () => {   // if the home screen would need scrolling, shrink the Mii, tiles and cartridge just enough to fit
       root.style.setProperty('--fit', 1);
-      if (innerWidth <= 820) return;
+      if (innerWidth <= 820 || innerHeight < 560) return;   // phones: no shrinking (on a short landscape screen it made the Mii tiny; the page scrolls instead)
       let f = 1;
       for (let i = 0; i < 12 && root.scrollHeight - innerHeight > 1; i++) {
         const over = root.scrollHeight - innerHeight, h = $('.console').offsetHeight;
@@ -750,6 +939,7 @@ addEventListener('DOMContentLoaded', () => {
     else { pose('walk'); setTimeout(() => go(0), reduce ? 0 : 1500); }
   }
   if (isHome) { hints(); home(cartridge()); }
+  Type.ready.then(good => { if (good) Type.tune(document.body); });   // once the pixel font is in, tidy every heading, label and the quote
 
   /* ---------- Arrival: the iris opens ---------- */
   if (arrival) fontsReady().then(() => requestAnimationFrame(() => {
@@ -769,7 +959,8 @@ addEventListener('DOMContentLoaded', () => {
   });
   document.addEventListener('focusin', e => { const t = e.target.closest && e.target.closest(TABS); if (t && t.matches(':focus-visible')) Sfx.play('hover'); });
   addEventListener('blur', () => Sfx.stopAll());   // never leave a loop running if the window loses focus
-  document.addEventListener('visibilitychange', () => { if (document.hidden) Sfx.stopAll(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) Sfx.silence(); else Sfx.hush(); });   // switching browser tabs: cut every sound, and stay quiet for a moment on return
+  addEventListener('pagehide', () => Sfx.silence());   // leaving the page: the browser may keep it frozen for the Back button, so nothing may still be sounding
 
   document.addEventListener('click', e => {
     if (e.target.closest(SELECTS) && !(isHome && e.target.closest('.user'))) Sfx.play('select');
@@ -795,5 +986,10 @@ addEventListener('DOMContentLoaded', () => {
     try { sessionStorage.setItem('pt', JSON.stringify({ x, y, t: Date.now() })); } catch (err) {}
     setTimeout(() => { location.href = u.href; }, 520);
   });
-  addEventListener('pageshow', e => { if (e.persisted) { leaving = false; root.classList.remove('leaving'); $$('.pop').forEach(n => n.classList.remove('pop')); } });
+  addEventListener('pageshow', e => {
+    if (!e.persisted) return;   // true = this page was brought back with the Back / Forward button instead of being loaded again
+    leaving = false; root.classList.remove('leaving'); $$('.pop').forEach(n => n.classList.remove('pop'));
+    Sfx.silence(); Sfx.hush(); Sfx.resync(); Sfx.unlock();   // nothing left over from before, quiet while the page settles, and pick up a mute change made on another page
+    if (typeof paintSnd === 'function') paintSnd();
+  });
 });
