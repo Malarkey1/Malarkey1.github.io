@@ -30,6 +30,38 @@ const PICS = {
   contact: ['images/contact-1.svg', 'images/contact-2.svg', 'images/contact-3.svg']
 };
 
+/* ===== EDIT: the projects on the Experience & Projects page =====
+   Each entry becomes a card (a thumbnail with the title and your role under it) and opens its own full-screen viewer when clicked.
+   All of a project's files live in ONE folder; the file names below are inside that folder. To add a project, copy the whole { ... } block,
+   give it a new id and folder, and fill it in.
+     logo         the thumbnail on the card and the big picture at the top of the viewer (a 16:9 picture fits best; wider art is cropped to its middle)
+     tag          the small badge on the thumbnail, like a video's length (leave '' for none)
+     preview      what plays when you hover the card (or long press it on a phone): a GIF or any picture file. previewSecs = how long it lasts
+                  (it times the thin progress bar along the bottom of the thumbnail)
+     shots        the screenshots that drift past in the viewer
+     link         an optional button in the viewer's top bar (set it to null to remove it) */
+const PROJECTS = [
+  {
+    id: 'possession-protocol',
+    title: 'Possession Protocol',
+    role: 'Gameplay & Multiplayer Programmer',
+    tag: 'Unreal Engine 5',
+    folder: 'PossessionProtocol',
+    logo: 'PPlogo.png',
+    preview: 'PPprev.gif', previewSecs: 9.7,
+    shots: ['PP1.png', 'PP2.png', 'PP3.png', 'PP4.png', 'PP5.png', 'PP6.png', 'PP7.png'],
+    link: { url: 'https://marwan-e.itch.io/possession-protocol', label: 'View on itch.io' },
+    contributions: {
+      role: 'Multiplayer & Gameplay Programmer',
+      items: ['Programmed multiplayer functionality', 'Programmed Character Classes', 'Added QoL features to enhance player immersion']
+    },
+    about: [
+      'Possession Protocol is a local co-op puzzle shooter. In order to progress through the levels, the player must hack robot to robot while eliminating all the enemies, as they deliver the payload at the end of each level.',
+      'The game was built in collaboration between the Humber Game Programming and 3D Artist students. The purpose of making the game was to simulate the feeling and work ethics required to work in a real game studio, as the whole team consisted of 40 people. The game was then presented at LevelUp Toronto, where enthusiasts are able to play a large variety of game booths.'
+    ]
+  }
+];
+
 /* ===== EDIT: sound effects. The files live in the "web sounds" folder. Each entry is [file, volume from 0 to 1] ===== */
 const SFX_DIR = 'web sounds/';
 const SFX = {
@@ -44,10 +76,16 @@ const SFX = {
   swap: ['cartPicSwap.wav', 0.1]   // the picture on the cartridge changing by itself   
 };
 const LOOPS = ['grab', 'pen', 'erase'];   // the sounds that loop; every other sound plays once
-/* Sounds that always play through a plain <audio> tag, even on a server. A tag's loop restarts with a tiny gap, while the Web Audio loop is
-   gapless (and so sounds noticeably faster). Opening the site from a folder can only use tags, so this makes the deployed site loop at the
+/* Sounds that always play through a plain <audio> tag on a computer, even on a server. A tag's loop restarts with a tiny gap, while the Web Audio
+   loop is gapless (and so sounds noticeably faster). Opening the site from a folder can only use tags, so this makes the deployed site loop at the
    same pace as the local one. Remove 'grab' from this list to get the gapless loop back. */
-const AUDIO_TAG = ['grab'];
+let TOUCH = false; try { TOUCH = matchMedia('(pointer: coarse)').matches; } catch (e) {}   // true on a phone or tablet (the main input is a finger)
+const AUDIO_TAG = TOUCH ? [] : ['grab'];
+/* Phones restart a looping <audio> tag much more slowly than a computer does (and by a different amount on every phone), so the same sound ran
+   slower there. On a touch screen the loop is therefore scheduled on the audio clock instead, with this much silence between repeats, which
+   makes its pace the same on every phone. 0.01 s is what a computer's <audio> loop does (measured in Chrome); raise it for a slower drag
+   sound, lower it to 0 for a seamless one. */
+const LOOP_GAP = { grab: 0.01 };   // seconds of silence between repeats
 const PITCH = { spin: .1 };               // random pitch for each play: .1 = anywhere from 10% lower to 10% higher (about 1.7 semitones). Add other sounds here too
 /* Sounds are decoded with the Web Audio API so loops are seamless and stop instantly. If that is not possible
    (for example the page is opened straight from a folder instead of a server) it falls back to plain <audio> tags. */
@@ -92,7 +130,25 @@ const Sfx = (() => {
       .then(b => { if (LOOPS.includes(n) && SFX[n][2]) loopBuf[n] = seamless(b, SFX[n][2]); lead[n] = leadOf(b); buf[n] = b; }).catch(() => { buf[n] = false; fallback(n); });
   });
   const live = new Set();   // one-shot sounds that are still playing, so they can all be cut off when the page is hidden or left
+  // a loop paced by the audio clock: each repeat is scheduled ahead of time (always one extra is queued), so timing never depends on timers or the browser
+  const pacedLoop = (n, vol) => {
+    const c = wake(), b = buf[n], g = c.createGain(), srcs = new Set(), period = b.duration + LOOP_GAP[n];
+    let next = c.currentTime + .005, alive = true;
+    g.gain.value = SFX[n][1] * vol; g.connect(c.destination);
+    const queue = () => {
+      if (!alive) return;
+      const s = c.createBufferSource(); s.buffer = b; s.connect(g); s.start(Math.max(next, c.currentTime)); next += period;
+      srcs.add(s); s.onended = () => { srcs.delete(s); queue(); };
+    };
+    queue(); queue();
+    const end = t => { alive = false; srcs.forEach(s => { try { s.stop(t); } catch (e) {} }); };
+    return {
+      stop() { const t = c.currentTime; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(0, t + .015); end(t + .02); },   // 15 ms fade so it cuts off without a click
+      kill() { end(0); try { g.disconnect(); } catch (e) {} }
+    };
+  };
   const voice = (n, vol, looping) => {
+    if (looping && typeof LOOP_GAP[n] === 'number' && !SFX[n][2]) return pacedLoop(n, vol);
     const c = wake(), s = c.createBufferSource(), g = c.createGain(), r = SFX[n][2];
     const vv = SFX[n][1] * vol, seam = looping && r;   // seam: a loop with a [from, to] steady part
     s.loop = looping; s.buffer = seam ? loopBuf[n] : buf[n];
@@ -865,6 +921,21 @@ addEventListener('DOMContentLoaded', () => {
     tiles.forEach(t => {
       const hov = () => { tour = false; clearTimeout(timer); spot(null); bubble.classList.add('done'); select(t); say(t.dataset.say); };
       t.addEventListener('mouseenter', hov); t.addEventListener('focus', hov);
+
+      /* Long press (finger or pen) = the same as hovering: this tile becomes the highlighted one and the cartridge shows its preview, WITHOUT
+         opening it. A normal tap still opens the tab. A mouse doesn't need this (hovering already does it), so a slow mouse click still opens. */
+      const LONG_PRESS = 400;   // ms to hold before it counts (EDIT)
+      let hold = 0, held = false, sx = 0, sy = 0;
+      const cancel = () => { clearTimeout(hold); hold = 0; };
+      t.addEventListener('pointerdown', e => {
+        if (e.pointerType === 'mouse' || e.button) return;
+        held = false; cancel(); sx = e.clientX; sy = e.clientY;
+        hold = setTimeout(() => { hold = 0; held = true; hov(); Sfx.play('hover'); }, LONG_PRESS);   // the hover blip confirms it
+      });
+      t.addEventListener('pointermove', e => { if (hold && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) cancel(); });   // moved: it is a scroll or a drag, not a press
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => t.addEventListener(ev, cancel));
+      t.addEventListener('click', e => { if (held) { held = false; e.preventDefault(); e.stopPropagation(); } }, true);   // the let-go after a long press must not open the tab (or play the select sound)
+      t.addEventListener('contextmenu', e => { if (held || TOUCH) e.preventDefault(); });                                 // no "open in new tab" menu on a long press
     });
     /* Pick him up, poke him, drop him. He stays inside the width of the speech box and the arrow follows him */
     const cartBox = $('.cartstage');
@@ -939,7 +1010,183 @@ addEventListener('DOMContentLoaded', () => {
     else { pose('walk'); setTimeout(() => go(0), reduce ? 0 : 1500); }
   }
   if (isHome) { hints(); home(cartridge()); }
+  /* ---------- Experience & Projects: a grid of project cards, like YouTube ----------
+     Hover a card (or long press it on a phone) and its preview plays over the thumbnail. Click it for the full viewer: the logo art, the
+     screenshots drifting past, and the full description. Everything stays on this page; the viewer works like the resume viewer
+     (the Back button, Esc, or the phone's back gesture closes it). */
+  const grid = $('#projects');
+  if (grid) {
+    const HOVER_DELAY = 280,   // ms the mouse rests on a card before its preview starts
+          LONG_PRESS = 400,    // ms a finger holds a card before its preview starts
+          STICKY_MS = 15000,   // a preview started by a long press keeps playing this long (or until you tap somewhere else)
+          STRIP_SPEED = 30;    // how fast the screenshots drift in the viewer, in px per second (smaller = slower)
+    const h = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const url = (p, f) => encodeURI(p.folder + '/' + f);
+
+    /* the cards */
+    const cards = PROJECTS.map((p, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'vcard'; b.style.setProperty('--k', Math.min(i, 4));
+      b.setAttribute('aria-haspopup', 'dialog');
+      b.innerHTML = `<span class="vthumb"><img class="vlogo" src="${url(p, p.logo)}" alt="" decoding="async"><span class="vbar"></span>${p.tag ? `<span class="vtag">${h(p.tag)}</span>` : ''}</span>`
+        + `<span class="vmeta"><span class="vtitle">${h(p.title)}</span><span class="vrole">${h(p.role)}</span></span>`;
+      grid.appendChild(b);
+      return [p, b];
+    });
+
+    /* Previews can be big (a GIF is several MB), so they download in the background only on a good connection (not on mobile data or Data Saver),
+       and always the moment someone shows interest in a card. */
+    const net = navigator.connection, goodNet = !net || (!net.saveData && net.type !== 'cellular' && !/(^|-)[23]g$/.test(net.effectiveType || ''));
+    const warmed = new Set(), keep = [];
+    const warm = p => { if (!p.preview || warmed.has(p.id)) return; warmed.add(p.id); const im = new Image(); im.src = url(p, p.preview); keep.push(im); };
+    if (goodNet) (window.requestIdleCallback || (f => setTimeout(f, 2500)))(() => PROJECTS.forEach(warm), { timeout: 5000 });
+
+    /* previews: only one plays at a time */
+    let live = null;   // { card, stop }
+    const stopLive = () => { if (live) live.stop(); };
+    document.addEventListener('pointerdown', e => { if (live && e.pointerType === 'touch' && !live.card.contains(e.target)) stopLive(); });   // tapping elsewhere ends a long-press preview
+    document.addEventListener('visibilitychange', () => { if (document.hidden) stopLive(); });
+
+    cards.forEach(([p, b]) => {
+      const thumb = b.querySelector('.vthumb'), bar = thumb.querySelector('.vbar');
+      let delay = 0, auto = 0, token = 0, shown = null;
+      const stop = () => {
+        clearTimeout(delay); clearTimeout(auto); token++;
+        thumb.classList.remove('loading', 'playing');
+        if (shown) { const gone = shown; shown = null; setTimeout(() => gone.remove(), 280); }   // fades out, then is removed so the next one starts from its first frame
+        if (live && live.card === b) live = null;
+      };
+      const start = sticky => {
+        if (!p.preview || shown || thumb.classList.contains('loading')) return;
+        stopLive(); live = { card: b, stop };
+        const me = ++token; thumb.classList.add('loading');   // the bar slides back and forth while it loads
+        bar.style.setProperty('--secs', (p.previewSecs || 8) + 's');
+        const el = new Image(); el.className = 'vprev'; el.alt = ''; el.decoding = 'async'; el.src = url(p, p.preview);
+        (el.decode ? el.decode() : new Promise((ok, no) => { el.onload = ok; el.onerror = no; })).catch(() => {}).then(() => {
+          if (me !== token) return;                                                        // you moved away before it finished loading
+          if (!el.naturalWidth) { thumb.classList.remove('loading'); if (live && live.card === b) live = null; return; }   // file missing: just stay on the logo
+          shown = el; thumb.insertBefore(el, bar); void el.offsetWidth;                    // a fresh image always starts from its first frame
+          thumb.classList.remove('loading'); thumb.classList.add('playing');               // fade in; the bar now counts through the preview
+          if (sticky) auto = setTimeout(stop, STICKY_MS);
+        });
+      };
+
+      /* mouse (and pen): hover */
+      b.addEventListener('pointerenter', e => { if (e.pointerType === 'touch') return; warm(p); delay = setTimeout(() => start(false), HOVER_DELAY); });
+      b.addEventListener('pointerleave', e => { if (e.pointerType === 'touch') return; stop(); });
+
+      /* finger: a long press starts the preview WITHOUT opening the card; a normal tap opens it. (Same idea as the long press on the home menu.) */
+      let hold = 0, held = false, sx = 0, sy = 0;
+      const cancel = () => { clearTimeout(hold); hold = 0; };
+      b.addEventListener('pointerdown', e => {
+        if (e.pointerType === 'mouse' || e.button) return;
+        held = false; cancel(); sx = e.clientX; sy = e.clientY; warm(p);
+        hold = setTimeout(() => { hold = 0; held = true; start(true); }, LONG_PRESS);
+      });
+      b.addEventListener('pointermove', e => { if (hold && Math.hypot(e.clientX - sx, e.clientY - sy) > 10) cancel(); });   // moved: a scroll, not a press
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => b.addEventListener(ev, cancel));
+      b.addEventListener('contextmenu', e => { if (held || TOUCH) e.preventDefault(); });                                 // no phone menu on a long press
+      b.addEventListener('click', e => {
+        if (held) { held = false; e.preventDefault(); e.stopPropagation(); return; }   // letting go after a long press must not open it (or play the select sound)
+        openViewer(p, b);
+      }, true);
+    });
+
+    /* the viewer */
+    const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H5M11 5l-7 7 7 7"/></svg>';
+    const EXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+    const PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zM13.500 5H17v14h-3.500z"/></svg>';
+    const PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    const pv = document.createElement('div');
+    pv.className = 'rv pv'; pv.hidden = true;
+    pv.setAttribute('role', 'dialog'); pv.setAttribute('aria-modal', 'true'); pv.setAttribute('aria-labelledby', 'pv-title');
+    pv.innerHTML = `<div class="rv-bar"><button type="button" class="rv-back" aria-label="Back to the projects">${ARROW}<span>Back</span></button><p class="rv-title" id="pv-title"></p><span class="pv-act"></span></div>`
+      + `<div class="rv-stage"><div class="pv-body"></div></div>`;
+    document.body.appendChild(pv);
+    const back = pv.querySelector('.rv-back'), vtitle = pv.querySelector('.rv-title'), act = pv.querySelector('.pv-act'), stage = pv.querySelector('.rv-stage'), body = pv.querySelector('.pv-body');
+    let from = null, pushed = false;
+
+    const fill = p => {
+      const c = p.contributions || {}, n = p.shots.length;
+      const real = p.shots.map((f, i) => `<img src="${url(p, f)}" alt="${h(p.title)} screenshot ${i + 1} of ${n}" decoding="async" draggable="false">`).join('');
+      const copy = p.shots.map(f => `<img src="${url(p, f)}" alt="" aria-hidden="true" decoding="async" draggable="false">`).join('');   // a second set, so the loop has no seam
+      body.innerHTML = `<img class="pv-hero" src="${url(p, p.logo)}" alt="${h(p.title)}">`
+        + (n ? `<div class="pv-strip"><div class="pv-view"><div class="pv-track"><div class="pv-set">${real}</div><div class="pv-set" aria-hidden="true">${copy}</div></div></div>`
+             + `<button type="button" class="pv-pause" aria-pressed="false" aria-label="Pause the screenshots">${PAUSE}</button></div>` : '')
+        + `<div class="pv-cols">`
+        + `<section class="txt pv-box"><h2 data-tag="ROLE">Contributions</h2>${c.role ? `<p class="pv-role">${h(c.role)}</p>` : ''}${(c.items || []).length ? `<ul>${c.items.map(t => `<li>${h(t)}</li>`).join('')}</ul>` : ''}</section>`
+        + `<section class="txt pv-box"><h2 data-tag="BRIEFING">About</h2>${(p.about || []).map(t => `<p>${h(t)}</p>`).join('')}</section>`
+        + `</div>`;
+      vtitle.textContent = p.title;
+      act.innerHTML = p.link ? `<a class="rv-zoom pv-ext" href="${h(p.link.url)}" target="_blank" rel="noopener" aria-label="${h(p.link.label)} (opens in a new tab)">${EXT}<span>${h(p.link.label)}</span></a>` : '';
+      const pause = body.querySelector('.pv-pause');
+      if (pause) pause.addEventListener('click', () => {
+        const strip = pause.closest('.pv-strip'), on = !strip.classList.contains('paused');
+        strip.classList.toggle('paused', on); pause.setAttribute('aria-pressed', on); pause.innerHTML = on ? PLAY : PAUSE;
+        pause.setAttribute('aria-label', on ? 'Play the screenshots' : 'Pause the screenshots');
+      });
+      Type.tune(pv);
+    };
+    const setSpeed = () => {   // one lap of the strip always takes the same distance / STRIP_SPEED, whatever the screen size
+      const set = body.querySelector('.pv-set'), track = body.querySelector('.pv-track');
+      if (set && track) track.style.setProperty('--dur', Math.max(10, set.offsetWidth / STRIP_SPEED).toFixed(1) + 's');
+    };
+    function openViewer(p, trigger) {
+      if (!pv.hidden) return;
+      stopLive(); fill(p); from = trigger;
+      pv.hidden = false; root.classList.add('rv-open'); stage.scrollTop = 0; setSpeed();
+      try { history.pushState({ pv: p.id }, ''); pushed = true; } catch (err) { pushed = false; }   // so a phone's back gesture closes the viewer instead of leaving the page
+      back.focus({ preventScroll: true });
+    }
+    const closeViewer = viaPop => {
+      if (pv.hidden) return;
+      pv.hidden = true; root.classList.remove('rv-open'); body.innerHTML = '';   // emptied so nothing keeps animating or loading behind the page
+      if (pushed && !viaPop) { try { history.back(); } catch (err) {} }
+      pushed = false;
+      if (from) from.focus({ preventScroll: true });
+    };
+    back.addEventListener('click', () => { Sfx.play('hover'); closeViewer(); });
+    stage.addEventListener('click', e => { if (e.target === stage || e.target === body) closeViewer(); });   // clicking the empty space around the content also goes back
+    addEventListener('popstate', () => { if (!pv.hidden) closeViewer(true); });
+    addEventListener('resize', () => { if (!pv.hidden) setSpeed(); });
+    document.addEventListener('keydown', e => {
+      if (pv.hidden) return;
+      if (e.key === 'Escape') { e.preventDefault(); closeViewer(); }
+      else if (e.key === 'Tab') {   // keep the keyboard inside the viewer
+        const f = [...pv.querySelectorAll('a[href], button')].filter(x => x.offsetParent !== null);
+        if (!f.length) return;
+        const i = f.indexOf(document.activeElement), next = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i === f.length - 1 ? 0 : i + 1);
+        e.preventDefault(); f[next].focus();
+      }
+    });
+  }
+
   Type.ready.then(good => { if (good) Type.tune(document.body); });   // once the pixel font is in, tidy every heading, label and the quote
+
+  /* Phone tiles are only about 70 to 95 px wide, so a flavour line like "Story Mode" used to wrap onto two lines. This shrinks each one just
+     enough to stay on ONE line, down to a readable floor (MIN_SIZE, in rem). A line that still can't fit at the floor, such as
+     "Character Select", wraps onto two lines as before instead of spilling out of its tile. Works whatever font actually renders. */
+  if (isHome) {
+    const MIN_SIZE = 0.58;
+    const fitFlavour = () => {
+      $$('.tile:not(.big) .tt small').forEach(sm => {
+        sm.style.fontSize = ''; sm.style.whiteSpace = '';                        // start from the stylesheet's size, wrapping allowed
+        if (!matchMedia('(max-width:560px)').matches) return;                   // phones only
+        const tt = sm.parentElement, cs = getComputedStyle(tt);
+        const room = tt.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        const probe = sm.cloneNode(true); probe.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap';
+        tt.appendChild(probe); const need = probe.getBoundingClientRect().width; probe.remove();   // width the text needs on one line
+        if (need <= room) { sm.style.whiteSpace = 'nowrap'; return; }           // already fits on one line
+        const px = parseFloat(getComputedStyle(sm).fontSize) * room / need;     // the size at which it just fits
+        const floor = MIN_SIZE * parseFloat(getComputedStyle(document.documentElement).fontSize);
+        if (px >= floor) { sm.style.fontSize = px.toFixed(2) + 'px'; sm.style.whiteSpace = 'nowrap'; }
+      });
+    };
+    const refit = () => requestAnimationFrame(fitFlavour);
+    addEventListener('resize', refit); addEventListener('orientationchange', refit);
+    if (document.fonts) document.fonts.ready.then(refit);
+    Type.ready.then(refit);   // after the letters are tidied, which changes their widths a little
+  }
 
   /* ---------- Arrival: the iris opens ---------- */
   if (arrival) fontsReady().then(() => requestAnimationFrame(() => {
@@ -951,7 +1198,7 @@ addEventListener('DOMContentLoaded', () => {
   /* ---------- Sounds for the menu "tabs" ---------- */
   const TABS = '.tile, .dock a';                     // these make the hover sound
   const TOGGLES = '.seg button';                      // the IT / Game Dev toggle: the hover sound plays when you pick one, not when you hover
-  const SELECTS = '.tile, .dock a, .user, .cartcap'; // these make the select sound when clicked (the name top left, except on the home menu; the caption under the cartridge; NOT the IT / Game Dev toggle)
+  const SELECTS = '.tile, .dock a, .user, .cartcap, .vcard'; // these make the select sound when clicked (the name top left, except on the home menu; the caption under the cartridge; NOT the IT / Game Dev toggle)
   document.addEventListener('pointerover', e => {
     if (e.pointerType === 'touch') return;
     const t = e.target.closest(TABS);
@@ -962,8 +1209,16 @@ addEventListener('DOMContentLoaded', () => {
   document.addEventListener('visibilitychange', () => { if (document.hidden) Sfx.silence(); else Sfx.hush(); });   // switching browser tabs: cut every sound, and stay quiet for a moment on return
   addEventListener('pagehide', () => Sfx.silence());   // leaving the page: the browser may keep it frozen for the Back button, so nothing may still be sounding
 
+  // "Which page is this?" The home page can be reached as "/", "/index.html" or "/index", so compare pages by meaning, not by the raw address.
+  // (Opening the site at "/" and clicking the name used to look like a different page, so it ran the transition and reloaded the home page.)
+  const pageKey = p => p.replace(/\/index(\.html?)?$/i, '/').replace(/\.html?$/i, '').replace(/\/+$/, '') || '/';
+  const samePage = a => {   // does this link point at the page we are already on? (a link with a #section is not counted)
+    if (!a.href) return false;   // not a link at all (a project card is a button)
+    try { const u = new URL(a.href, location.href); return u.origin === location.origin && !u.hash && pageKey(u.pathname) === pageKey(location.pathname); } catch (err) { return false; }
+  };
   document.addEventListener('click', e => {
-    if (e.target.closest(SELECTS) && !(isHome && e.target.closest('.user'))) Sfx.play('select');
+    const sel = e.target.closest(SELECTS);
+    if (sel && !samePage(sel)) Sfx.play('select');   // no select sound for a tab you are already on (the name on the home menu, the current tab in the bottom bar...)
     if (e.target.closest(TOGGLES)) Sfx.play('hover');
     if (!reduce && !e.target.closest('.doodle')) {
       const d = document.createElement('i'); d.className = 'tap';
@@ -971,13 +1226,15 @@ addEventListener('DOMContentLoaded', () => {
       document.body.appendChild(d); setTimeout(() => d.remove(), 600);
     }
     const a = e.target.closest('a[href]');
-    if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target || reduce) return;
+    if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target) return;
     const href = a.getAttribute('href');
     if (!href || /^(#|mailto:|tel:|https?:|\/\/)/i.test(href)) return;
     const u = new URL(a.href, location.href);
     if (a.hasAttribute('download') || !/(\.html?|\/)$/.test(u.pathname)) return;   // files like resume.pdf download normally
+    if (samePage(a)) { e.preventDefault(); return; }   // already here: the link does nothing
+    if (reduce) return;   // reduced motion: no transition, just follow the link
     e.preventDefault();
-    if (leaving || u.pathname === location.pathname) return;
+    if (leaving) return;
     leaving = true;
     const r = a.getBoundingClientRect();
     const x = e.detail ? e.clientX : r.left + r.width / 2, y = e.detail ? e.clientY : r.top + r.height / 2;

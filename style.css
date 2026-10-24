@@ -458,3 +458,79 @@ html{text-rendering:geometricPrecision}
 .art.whole{position:relative}
 .art.whole::before{content:"";position:absolute;inset:-15%;background:var(--bg) center/cover;filter:blur(0.4rem) brightness(0.85) saturate(1.15)}
 .art.whole img{position:relative;object-fit:contain}
+
+/* ---------- Phone tiles: more room for the flavour text ("Story Mode", "Online Mode"); script.js then fits it to one line ---------- */
+@media(max-width:560px){
+  .tile:not(.big) .tt{padding:0.35rem 0.15rem}
+  .tile:not(.big) .tt small{font-size:0.7rem}
+}
+
+/* ---------- Home tiles: a long press must not pop up the phone's link menu / preview or select the text ---------- */
+.tile{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+
+/* ---------- Contact page (two-column view): the ICON itself is centred on the neighbouring text box ----------
+   The icon and its label used to be centred together as a pair, which left the icon about 18 px above the box's centre. The label now hangs
+   below the icon without counting towards the centring. (On a narrow screen the icon sits above the box, so nothing changes there.) */
+@media(min-width:761px){
+  [data-page="contact"] .dsi-name{position:absolute;top:100%;left:50%;margin-top:0.6rem;transform:translateX(-50%);white-space:nowrap}
+}
+
+/* ---------- Experience & Projects: project cards, like video thumbnails ---------- */
+.vgrid{max-width:62.5rem;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,19.5rem),1fr));gap:2rem clamp(1rem,3vw,1.75rem);align-items:start}
+.vcard{display:block;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
+  animation:rise2 .7s cubic-bezier(.2,1.1,.4,1) backwards;animation-delay:calc(var(--k,0)*.1s + .3s)}
+html[data-enter]:not(.reveal) .vcard{animation:none;opacity:0}
+.vcard:focus-visible{outline:none}
+.vthumb{position:relative;display:block;aspect-ratio:16/9;overflow:hidden;background:var(--d6);border:0.125rem solid var(--line);border-radius:0.5rem;box-shadow:0 0.3125rem 0 var(--g3);transition:transform .15s,box-shadow .15s}
+.vcard:hover .vthumb,.vcard:focus-visible .vthumb{transform:translateY(-0.1875rem);box-shadow:0 0.5rem 0 var(--g3)}
+.vcard:focus-visible .vthumb{outline:0.1875rem solid var(--blue);outline-offset:0.25rem}
+.vcard:active .vthumb{transform:translateY(0.1875rem);box-shadow:0 0.125rem 0 var(--g3)}
+.vthumb img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
+.vprev{position:absolute;inset:0;opacity:0;transition:opacity .25s}
+.vthumb.playing .vprev{opacity:1}
+.vtag{position:absolute;right:0.5rem;top:0.5rem;padding:0 0.5rem;border-radius:0.25rem;background:rgba(20,20,24,.84);color:#fff;font:400 .78rem/1.55 var(--pix)}
+/* the thin bar along the bottom: slides back and forth while the preview loads, then counts through it (like YouTube's) */
+.vbar{position:absolute;left:0;right:0;bottom:0;height:0.3125rem;opacity:0;transition:opacity .2s;background:rgba(0,0,0,.4)}
+.vbar::after{content:"";position:absolute;inset:0 auto 0 0;width:100%;background:linear-gradient(#69bcf0,#2f6ed0);transform:scaleX(0);transform-origin:left}
+.vthumb.loading .vbar,.vthumb.playing .vbar{opacity:1}
+.vthumb.loading .vbar::after{width:35%;transform:none;animation:vload 1s ease-in-out infinite}
+.vthumb.playing .vbar::after{animation:vprog var(--secs,8s) linear infinite}
+@keyframes vload{from{transform:translateX(-100%)}to{transform:translateX(290%)}}
+@keyframes vprog{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.vmeta{display:block;padding:0.85rem 0.2rem 0}
+.vtitle{display:block;font:400 1.2rem/1.3 var(--pix);color:var(--ink)}
+.vrole{display:block;margin-top:0.2rem;font-size:.95rem;font-weight:700;color:var(--g4)}
+
+/* ---------- Project viewer: full screen on this page, built on the resume viewer's top bar ---------- */
+.rv.pv,html[data-theme="dark"] .rv.pv{background:linear-gradient(var(--grid) 0.0625rem,transparent 0.0625rem) 0 0/1rem 1rem,linear-gradient(90deg,var(--grid) 0.0625rem,transparent 0.0625rem) 0 0/1rem 1rem,var(--paper)}
+.pv .rv-stage{display:block}
+.pv-body{width:min(100%,62.5rem);margin:0 auto;padding:1.25rem clamp(0.75rem,3vw,1.5rem) calc(2.5rem + env(safe-area-inset-bottom,0px));animation:pvin .3s cubic-bezier(.2,1.1,.4,1)}
+@keyframes pvin{from{opacity:0;transform:translateY(1rem) scale(.985)}}
+.pv-act{justify-self:end;display:flex}
+.pv .rv-zoom.pv-ext{gap:0.4rem;padding:0.3rem 0.8rem 0.3rem 0.65rem;text-decoration:none}
+.pv-ext span{font:400 1.05rem var(--pix)}
+.pv-hero{display:block;width:100%;height:auto;aspect-ratio:960/300;object-fit:cover;background:var(--d6);border:0.125rem solid var(--line);border-radius:0.5rem;box-shadow:0 0.3125rem 0 var(--g3)}
+/* the screenshots drift slowly past; they stop while the pointer is over them, or with the pause button */
+.pv-strip{--sh:clamp(8.5rem,24vw,12rem);position:relative;margin-top:1.75rem}
+.pv-view{overflow:hidden;padding:0.35rem 0 0.7rem;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
+.pv-track{display:flex;width:max-content;animation:pvscroll var(--dur,80s) linear infinite}
+.pv-set{display:flex;gap:0.75rem;padding-right:0.75rem}
+.pv-track img{display:block;flex:none;height:var(--sh);aspect-ratio:16/9;width:auto;object-fit:cover;background:var(--d6);border:0.125rem solid var(--line);border-radius:0.375rem;box-shadow:0 0.1875rem 0 var(--g3);-webkit-user-drag:none}
+@keyframes pvscroll{to{transform:translateX(-50%)}}
+.pv-strip.paused .pv-track{animation-play-state:paused}
+@media(hover:hover){.pv-strip:hover .pv-track{animation-play-state:paused}}
+.pv-pause{position:absolute;right:0.75rem;bottom:1.2rem;z-index:2;display:grid;place-items:center;width:2.125rem;height:2.125rem;padding:0;border:0.125rem solid #1c4796;border-radius:50%;background:linear-gradient(#69bcf0,#2f6ed0);box-shadow:0 0.1875rem 0 #1c4796,inset 0 0.125rem 0 rgba(255,255,255,.5);color:#fff;transition:transform .08s}
+.pv-pause:active{transform:translateY(0.1875rem);box-shadow:0 0 0 #1c4796}
+.pv-pause svg{width:1rem;height:1rem}
+@media(prefers-reduced-motion:reduce){   /* no drifting: a plain strip you scroll yourself */
+  .pv-track{animation:none}
+  .pv-view{overflow-x:auto;-webkit-mask-image:none;mask-image:none}
+  .pv-set+.pv-set,.pv-pause{display:none}
+}
+.pv-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);gap:clamp(1rem,3vw,1.75rem);margin-top:1.5rem;align-items:start}
+.pv-box h2::before{content:attr(data-tag)}
+.pv-role{font-weight:800}
+.pv-box ul{margin:0.6rem 0 0;padding-left:1.2rem}
+.pv-box li+li{margin-top:0.35rem}
+@media(max-width:760px){.pv-cols{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:560px){.pv-ext span{display:none}.pv .rv-zoom.pv-ext{padding:0.3rem 0.65rem}}
