@@ -39,7 +39,11 @@ const PICS = {
      preview      what plays when you hover the card (or long press it on a phone): a GIF or any picture file. previewSecs = how long it lasts
                   (it times the thin progress bar along the bottom of the thumbnail)
      shots        the screenshots that drift past in the viewer
-     link         an optional button in the viewer's top bar (set it to null to remove it) */
+     shotsHD      optional, same order as shots: bigger, sharper versions used ONLY when a screenshot is enlarged (the small one shows instantly,
+                  then swaps to this when it has loaded). If one is missing, the normal one is used. For real sharpness, put the full-size
+                  screenshots in here under these names
+     link         an optional button in the viewer, right under the logo art (set it to null to remove it)
+     engine       an optional "Engine" box in the viewer; icon is a small picture shown beside the name (leave '' for none) */
 const PROJECTS = [
   {
     id: 'possession-protocol',
@@ -50,10 +54,12 @@ const PROJECTS = [
     logo: 'PPlogo.png',
     preview: 'PPprev.gif', previewSecs: 9.7,
     shots: ['PP1.png', 'PP2.png', 'PP3.png', 'PP4.png', 'PP5.png', 'PP6.png', 'PP7.png'],
+    shotsHD: ['PP1_hd.webp', 'PP2_hd.webp', 'PP3_hd.webp', 'PP4_hd.webp', 'PP5_hd.webp', 'PP6_hd.webp', 'PP7_hd.webp'],
     link: { url: 'https://marwan-e.itch.io/possession-protocol', label: 'View on itch.io' },
+    engine: { name: 'Unreal Engine 5', icon: 'skills/unreal.svg' },
     contributions: {
       role: 'Multiplayer & Gameplay Programmer',
-      items: ['Programmed multiplayer functionality', 'Programmed Character Classes', 'Added QoL features to enhance player immersion']
+      items: ['Programmed multiplayer functionality', 'Programmed Character Classes', 'Added QoL features to enhance player immersion', 'Tested and debugged project']
     },
     about: [
       'Possession Protocol is a local co-op puzzle shooter. In order to progress through the levels, the player must hack robot to robot while eliminating all the enemies, as they deliver the payload at the end of each level.',
@@ -67,15 +73,20 @@ const SFX_DIR = 'web sounds/';
 const SFX = {
   poke: ['miiPoke.mp3', 1], land: ['Mii Land.mp3', 0.7],
   grab: ['miiGrab.mp3', .8],                                           // loops while the Mii is held
-  pen: ['pictochat_pen.ogg', .5, [.25, 7.5]], erase: ['pictochat_eraser.ogg', .5, [.1, 0.95]],   // play while you draw / right-click erase AND move.
+  pen: ['pictochat_pen.m4a', .5, [.25, 7.5]], erase: ['pictochat_eraser.m4a', .5, [.1, 0.95]],   // play while you draw / right-click erase AND move.
   // [from, to] = the steady part of the file, in seconds, that gets looped (the pen file fades out at the end and the eraser file fades out over its whole length)
   pick: ['brush pick.wav', 0.5], clear: ['clear.wav', 1],
-  hover: ['hoverTab.wav', .7], select: ['tabSelect.wav', 1],
-  spin: ['cartSpin.ogg', 0.7, [.18, .4]],   // plays each time you spin the cartridge round. On a sound that doesn't loop, [from, to] is the part that gets played
+  hover: ['hoverTab.wav', .7], select: ['tabSelect.wav', 0.5],
+  spin: ['cartSpin.m4a', 0.7, [.18, .4]],   // plays each time you spin the cartridge round. On a sound that doesn't loop, [from, to] is the part that gets played
   lightOn: ['lightOn.m4a', 1], lightOff: ['lightOff.m4a', 1], // the light / dark switch
   swap: ['cartPicSwap.wav', 0.1]   // the picture on the cartridge changing by itself   
 };
 const LOOPS = ['grab', 'pen', 'erase'];   // the sounds that loop; every other sound plays once
+/* Safari on a Mac cannot play Ogg Vorbis (.ogg) files, so the sounds that use them (the cartridge spin, drawing and erasing) were silent there. A
+   browser that can't play a .ogg is now given the SAME file name in these formats instead, tried in this order: pictochat_pen.ogg ->
+   pictochat_pen.m4a, then .mp3, then .wav. Put a converted copy next to each .ogg. On any browser that CAN play .ogg, nothing changes.
+   (to convert on a Mac with ffmpeg:  for f in cartSpin pictochat_pen pictochat_eraser; do ffmpeg -i "$f.ogg" -c:a aac -b:a 160k "$f.m4a"; done) */
+const SFX_ALT = ['.m4a', '.mp3', '.wav'];
 /* Sounds that always play through a plain <audio> tag on a computer, even on a server. A tag's loop restarts with a tiny gap, while the Web Audio
    loop is gapless (and so sounds noticeably faster). Opening the site from a folder can only use tags, so this makes the deployed site loop at the
    same pace as the local one. Remove 'grab' from this list to get the gapless loop back. */
@@ -90,7 +101,17 @@ const PITCH = { spin: .1 };               // random pitch for each play: .1 = an
 /* Sounds are decoded with the Web Audio API so loops are seamless and stop instantly. If that is not possible
    (for example the page is opened straight from a folder instead of a server) it falls back to plain <audio> tags. */
 const Sfx = (() => {
-  const AC = window.AudioContext || window.webkitAudioContext, url = n => encodeURI(SFX_DIR + SFX[n][0]);
+  const AC = window.AudioContext || window.webkitAudioContext, urlOfFile = f => encodeURI(SFX_DIR + f);
+  const MIME = { ogg: 'audio/ogg; codecs="vorbis"', m4a: 'audio/mp4; codecs="mp4a.40.2"', mp3: 'audio/mpeg', wav: 'audio/wav' };
+  const canPlay = f => { try { return !!new Audio().canPlayType(MIME[f.split('.').pop().toLowerCase()] || ''); } catch (e) { return true; } };
+  // the files to try for a sound, best first: a .ogg on a browser that can't play .ogg tries its .m4a / .mp3 / .wav twins first
+  const cands = n => {
+    const f = SFX[n][0]; if (!/\.ogg$/i.test(f)) return [f];
+    const twins = SFX_ALT.map(x => f.replace(/\.ogg$/i, x));
+    return canPlay(f) ? [f, ...twins] : [...twins, f];
+  };
+  const url = n => urlOfFile(cands(n).find(canPlay) || cands(n)[0]);   // the file an <audio> tag should use
+  const decode = (c, d) => new Promise((ok, no) => { const r = c.decodeAudioData(d, ok, no); if (r && r.then) r.then(ok, no); });   // old Safari only has the callback form
   let ac = null;
   const buf = {}, loopBuf = {}, lead = {}, tags = {}, pools = {}, loops = {};   // buf[n]: decoded sound (null while loading, false = use an <audio> tag)
   const wake = () => {
@@ -126,7 +147,9 @@ const Sfx = (() => {
     if (!SFX[n] || n in buf) return;
     if (AUDIO_TAG.includes(n) || !wake()) { buf[n] = false; fallback(n); return; }
     buf[n] = null;
-    fetch(url(n)).then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(d => ac.decodeAudioData(d))
+    const attempt = list => fetch(urlOfFile(list[0])).then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(d => decode(ac, d))
+      .catch(err => list.length > 1 ? attempt(list.slice(1)) : Promise.reject(err));   // this file is missing or can't be decoded: try the next one
+    attempt(cands(n))
       .then(b => { if (LOOPS.includes(n) && SFX[n][2]) loopBuf[n] = seamless(b, SFX[n][2]); lead[n] = leadOf(b); buf[n] = b; }).catch(() => { buf[n] = false; fallback(n); });
   });
   const live = new Set();   // one-shot sounds that are still playing, so they can all be cut off when the page is hidden or left
@@ -735,6 +758,11 @@ addEventListener('DOMContentLoaded', () => {
   /* ---------- Home: spinning cartridge (random picture from the hovered category; drag to spin) ---------- */
   function cartridge() {
     const img = $('#cartimg'), cap = $('#cartcap'), flip = $('#cartflip'), body = $('.cart3d'), grab = $('.cartfloat');
+    /* How the cartridge is drawn in 3D. true = every face gets its own perspective transform, worked out in CSS (see "Cartridge, projected" in
+       style.css). false = the browser's nested 3D ("preserve-3d"), which Safari on a Mac can flatten, so the cartridge looked 2D there. Both look
+       the same where nested 3D works. Set it to false to go back to how it was. */
+    const CART_PROJECTED = true;
+    if (CART_PROJECTED) { flip.classList.add('flat'); body.classList.add('flat'); }
     let cat = null, last = '', swapId = 0;
     Sfx.load('spin', 'swap');
     const norm = p => typeof p === 'string' ? { src: p, pos: '50% 50%', whole: false } : { src: p[0], pos: p[1] || '50% 50%', whole: p[2] === 'whole' };   // PICS entry -> { file, crop focus, show whole photo? }
@@ -778,7 +806,8 @@ addEventListener('DOMContentLoaded', () => {
       if (document.hidden) return;
       if (settle > 0) { settle -= dt; angle += (Math.round(angle / 360) * 360 - angle) * Math.min(1, dt * 12); vel = BASE; }
       else if (!dragging) { vel += (BASE - vel) * Math.min(1, dt * 1.1); angle += vel * dt; }
-      body.style.transform = `rotateY(${angle}deg)`;
+      if (CART_PROJECTED) body.style.setProperty('--R', `translate(3.625rem,4.125rem) rotateY(${angle.toFixed(3)}deg) translate(-3.625rem,-4.125rem)`);   // spin around the middle of the cartridge
+      else body.style.transform = `rotateY(${angle}deg)`;
       // one sound each time the slim side of the cartridge points at you (twice per full turn: 90, 270, 450 degrees ...), but only while
       // YOU are spinning it (dragging, then coasting). The slow idle turn stays silent. Each edge only counts once per spin, so wiggling
       // it back and forth across the same spot doesn't repeat the sound, and a small nudge (under 20 degrees) is ignored.
@@ -1093,71 +1122,208 @@ addEventListener('DOMContentLoaded', () => {
     });
 
     /* the viewer */
-    const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H5M11 5l-7 7 7 7"/></svg>';
-    const EXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+    const svg = (d, w = 3, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" ${extra}><path d="${d}"/></svg>`;
+    const ARROW = svg('M20 12H5M11 5l-7 7 7 7'), CHEV_L = svg('M15 5l-7 7 7 7', 3.2), CHEV_R = svg('M9 5l7 7-7 7', 3.2), CLOSE = svg('M6 6l12 12M18 6L6 18', 3);
+    const EXT = svg('M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5', 2.6);
     const PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zM13.500 5H17v14h-3.500z"/></svg>';
     const PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
     const pv = document.createElement('div');
     pv.className = 'rv pv'; pv.hidden = true;
     pv.setAttribute('role', 'dialog'); pv.setAttribute('aria-modal', 'true'); pv.setAttribute('aria-labelledby', 'pv-title');
-    pv.innerHTML = `<div class="rv-bar"><button type="button" class="rv-back" aria-label="Back to the projects">${ARROW}<span>Back</span></button><p class="rv-title" id="pv-title"></p><span class="pv-act"></span></div>`
-      + `<div class="rv-stage"><div class="pv-body"></div></div>`;
+    pv.innerHTML = `<div class="rv-bar"><button type="button" class="rv-back" aria-label="Back to the projects">${ARROW}<span>Back</span></button><p class="rv-title" id="pv-title"></p></div>`
+      + `<div class="rv-stage"><div class="pv-body"></div></div>`
+      + `<div class="pv-zoom" role="dialog" aria-modal="true" aria-label="Enlarged screenshot" hidden>`
+      + `<button type="button" class="pz-close" aria-label="Close the enlarged screenshot">${CLOSE}</button>`
+      + `<button type="button" class="pz-nav pz-prev" aria-label="Previous screenshot">${CHEV_L}</button>`
+      + `<figure class="pz-fig"><img class="pz-img" alt="" draggable="false"><figcaption class="pz-count"></figcaption></figure>`
+      + `<button type="button" class="pz-nav pz-next" aria-label="Next screenshot">${CHEV_R}</button></div>`;
     document.body.appendChild(pv);
-    const back = pv.querySelector('.rv-back'), vtitle = pv.querySelector('.rv-title'), act = pv.querySelector('.pv-act'), stage = pv.querySelector('.rv-stage'), body = pv.querySelector('.pv-body');
-    let from = null, pushed = false;
+    const back = pv.querySelector('.rv-back'), vtitle = pv.querySelector('.rv-title'), stage = pv.querySelector('.rv-stage'), body = pv.querySelector('.pv-body');
+    const zoom = pv.querySelector('.pv-zoom'), zimg = zoom.querySelector('.pz-img'), zcount = zoom.querySelector('.pz-count');
+    let cur = null, from = null, pushed = false, strip = null, zIndex = 0, zPushed = false, selfBack = 0;
+    const goBack = () => { selfBack++; try { history.back(); } catch (err) { selfBack--; } };   // we close things ourselves; the popstate this causes must not close anything else
 
     const fill = p => {
-      const c = p.contributions || {}, n = p.shots.length;
-      const real = p.shots.map((f, i) => `<img src="${url(p, f)}" alt="${h(p.title)} screenshot ${i + 1} of ${n}" decoding="async" draggable="false">`).join('');
-      const copy = p.shots.map(f => `<img src="${url(p, f)}" alt="" aria-hidden="true" decoding="async" draggable="false">`).join('');   // a second set, so the loop has no seam
+      const c = p.contributions || {}, n = p.shots.length, eng = p.engine;
+      const real = p.shots.map((f, i) => `<button type="button" class="pv-shot" data-i="${i}" aria-label="Enlarge screenshot ${i + 1} of ${n}"><img src="${url(p, f)}" alt="" decoding="async" draggable="false"></button>`).join('');
+      const copy = p.shots.map((f, i) => `<span class="pv-shot" data-i="${i}" aria-hidden="true"><img src="${url(p, f)}" alt="" decoding="async" draggable="false"></span>`).join('');   // more sets, so the loop has no seam
       body.innerHTML = `<img class="pv-hero" src="${url(p, p.logo)}" alt="${h(p.title)}">`
-        + (n ? `<div class="pv-strip"><div class="pv-view"><div class="pv-track"><div class="pv-set">${real}</div><div class="pv-set" aria-hidden="true">${copy}</div></div></div>`
+        + (p.link ? `<div class="pv-visit"><a class="pill" href="${h(p.link.url)}" target="_blank" rel="noopener">${EXT}<span>${h(p.link.label)}</span></a></div>` : '')
+        + (n ? `<div class="pv-strip" role="group" aria-roledescription="carousel" aria-label="Screenshots of ${h(p.title)}"><div class="pv-view"><div class="pv-track"><div class="pv-set">${real}</div><div class="pv-set" aria-hidden="true">${copy}</div></div></div>`
+             + `<button type="button" class="pv-nav pv-prev" aria-label="Previous screenshot">${CHEV_L}</button><button type="button" class="pv-nav pv-next" aria-label="Next screenshot">${CHEV_R}</button>`
              + `<button type="button" class="pv-pause" aria-pressed="false" aria-label="Pause the screenshots">${PAUSE}</button></div>` : '')
         + `<div class="pv-cols">`
-        + `<section class="txt pv-box"><h2 data-tag="ROLE">Contributions</h2>${c.role ? `<p class="pv-role">${h(c.role)}</p>` : ''}${(c.items || []).length ? `<ul>${c.items.map(t => `<li>${h(t)}</li>`).join('')}</ul>` : ''}</section>`
-        + `<section class="txt pv-box"><h2 data-tag="BRIEFING">About</h2>${(p.about || []).map(t => `<p>${h(t)}</p>`).join('')}</section>`
+        + `<section class="txt pv-box pv-contrib"><h2 data-tag="ROLE">Contributions</h2>${c.role ? `<p class="pv-role">${h(c.role)}</p>` : ''}${(c.items || []).length ? `<ul>${c.items.map(t => `<li>${h(t)}</li>`).join('')}</ul>` : ''}</section>`
+        + `<section class="txt pv-box pv-about"><h2 data-tag="BRIEFING">About</h2>${(p.about || []).map(t => `<p>${h(t)}</p>`).join('')}</section>`
+        + (eng ? `<section class="txt pv-box pv-engine"><h2 data-tag="TOOLS">Engine</h2><div class="pv-eng">${eng.icon ? `<img src="${h(eng.icon)}" alt="" width="56" height="56">` : ''}<b>${h(eng.name)}</b></div></section>` : '')
         + `</div>`;
       vtitle.textContent = p.title;
-      act.innerHTML = p.link ? `<a class="rv-zoom pv-ext" href="${h(p.link.url)}" target="_blank" rel="noopener" aria-label="${h(p.link.label)} (opens in a new tab)">${EXT}<span>${h(p.link.label)}</span></a>` : '';
-      const pause = body.querySelector('.pv-pause');
-      if (pause) pause.addEventListener('click', () => {
-        const strip = pause.closest('.pv-strip'), on = !strip.classList.contains('paused');
-        strip.classList.toggle('paused', on); pause.setAttribute('aria-pressed', on); pause.innerHTML = on ? PLAY : PAUSE;
-        pause.setAttribute('aria-label', on ? 'Play the screenshots' : 'Pause the screenshots');
-      });
       Type.tune(pv);
     };
-    const setSpeed = () => {   // one lap of the strip always takes the same distance / STRIP_SPEED, whatever the screen size
-      const set = body.querySelector('.pv-set'), track = body.querySelector('.pv-track');
-      if (set && track) track.style.setProperty('--dur', Math.max(10, set.offsetWidth / STRIP_SPEED).toFixed(1) + 's');
+
+    /* The screenshot carousel. It drifts slowly by itself, but you can drag it (mouse or finger), swipe a trackpad sideways, use the arrow
+       buttons or the arrow keys, and it loops forever in both directions. It stops drifting while the pointer is over it, while you are
+       using it, while a screenshot is enlarged, and with the pause button. Clicking a screenshot enlarges it. */
+    const makeStrip = () => {
+      const el = body.querySelector('.pv-strip'); if (!el) return null;
+      const view = el.querySelector('.pv-view'), track = el.querySelector('.pv-track'), set = track.querySelector('.pv-set'), shots = [...set.querySelectorAll('.pv-shot')];
+      const pauseBtn = el.querySelector('.pv-pause');
+      let pos = 0, vel = 0, W = 1, paused = false, hover = false, kb = false, zooming = false, idleUntil = 0, drag = null, moved = false, tween = null, raf = 0, last = performance.now();
+      const wrap = x => ((x % W) + W) % W, idle = () => { idleUntil = performance.now() + 2500; };   // after you let go, it waits a moment before drifting again
+      const measure = () => {
+        W = Math.max(1, set.offsetWidth);
+        const need = Math.ceil(view.clientWidth / W) + 1;
+        while (track.children.length < need) track.appendChild(track.children[1].cloneNode(true));   // never a gap, even with few screenshots on a wide screen
+      };
+      const pitch = () => shots.length > 1 ? shots[1].offsetLeft - shots[0].offsetLeft : W;
+      const go = (delta) => { tween = { from: pos, to: pos + delta, t0: performance.now(), ms: 380 }; vel = 0; idle(); };
+      const centerOn = i => {
+        const s = shots[i]; if (!s) return;
+        let d = wrap(s.offsetLeft + s.offsetWidth / 2 - view.clientWidth / 2) - wrap(pos);
+        if (d > W / 2) d -= W; if (d < -W / 2) d += W;
+        go(d);
+      };
+      const frame = now => {
+        const dt = Math.min(0.05, (now - last) / 1000); last = now;
+        if (tween) { const t = Math.min(1, (now - tween.t0) / tween.ms); pos = tween.from + (tween.to - tween.from) * (1 - Math.pow(1 - t, 3)); if (t >= 1) tween = null; }
+        else if (!drag) {
+          if (Math.abs(vel) > 10) { pos += vel * dt; vel *= Math.exp(-dt * 3.2); } else vel = 0;   // coasting after a flick
+          if (!vel && !paused && !hover && !kb && !reduce && !zooming && now > idleUntil) pos += STRIP_SPEED * dt;
+        }
+        pos = wrap(pos);
+        track.style.transform = `translate3d(${(-pos).toFixed(2)}px,0,0)`;
+        raf = requestAnimationFrame(frame);
+      };
+      measure(); raf = requestAnimationFrame(frame);
+
+      view.addEventListener('pointerdown', e => {
+        if (e.button) return;
+        tween = null; vel = 0; moved = false;
+        drag = { id: e.pointerId, x: e.clientX, pos0: pos, hist: [[e.timeStamp, e.clientX]] };
+      });
+      view.addEventListener('pointermove', e => {
+        if (!drag || e.pointerId !== drag.id) return;
+        const dx = e.clientX - drag.x;
+        if (!moved && Math.abs(dx) > 6) { moved = true; el.classList.add('dragging'); try { view.setPointerCapture(e.pointerId); } catch (err) {} }
+        if (moved) { pos = wrap(drag.pos0 - dx); drag.hist.push([e.timeStamp, e.clientX]); if (drag.hist.length > 6) drag.hist.shift(); }
+      });
+      const release = e => {
+        if (!drag || e.pointerId !== drag.id) return;
+        const d = drag; drag = null; el.classList.remove('dragging');
+        if (moved) {   // let go with some speed: it coasts on
+          const a = d.hist[0], z = d.hist[d.hist.length - 1], dt = (z[0] - a[0]) / 1000;
+          vel = dt > 0.01 && e.timeStamp - z[0] < 80 ? Math.max(-3000, Math.min(3000, -(z[1] - a[1]) / dt)) : 0;
+          idle();
+        }
+      };
+      view.addEventListener('pointerup', release); view.addEventListener('pointercancel', release);
+      view.addEventListener('wheel', e => {   // a sideways trackpad swipe (or shift + wheel); the normal up/down wheel still scrolls the page
+        const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+        if (!d) return; e.preventDefault(); tween = null; vel = 0; pos = wrap(pos + d); idle();
+      }, { passive: false });
+      el.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') hover = true; });
+      el.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hover = false; });
+      el.addEventListener('focusin', e => { const s = e.target.closest('.pv-shot'); kb = e.target.matches(':focus-visible'); if (s && kb) centerOn(+s.dataset.i); });
+      el.addEventListener('focusout', () => { kb = false; });
+      track.addEventListener('keydown', e => {   // arrow keys step from screenshot to screenshot
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        const i = shots.indexOf(document.activeElement); if (i < 0) return;
+        e.preventDefault(); const j = (i + (e.key === 'ArrowRight' ? 1 : -1) + shots.length) % shots.length; shots[j].focus({ preventScroll: true }); centerOn(j);
+      });
+      track.addEventListener('click', e => {
+        if (moved) { moved = false; return; }   // that was the end of a drag, not a click
+        const s = e.target.closest('.pv-shot'); if (s) openZoom(+s.dataset.i);
+      });
+      el.querySelector('.pv-prev').addEventListener('click', () => go(-pitch()));
+      el.querySelector('.pv-next').addEventListener('click', () => go(pitch()));
+      pauseBtn.addEventListener('click', () => {
+        paused = !paused; el.classList.toggle('paused', paused); pauseBtn.setAttribute('aria-pressed', paused); pauseBtn.innerHTML = paused ? PLAY : PAUSE;
+        pauseBtn.setAttribute('aria-label', paused ? 'Play the screenshots' : 'Pause the screenshots');
+      });
+      return { measure, centerOn, setZoom(v) { zooming = v; }, destroy() { cancelAnimationFrame(raf); } };
     };
+
+    /* enlarged screenshots */
+    const hdOf = (p, i) => (p.shotsHD && p.shotsHD[i]) ? url(p, p.shotsHD[i]) : null;
+    const warmHD = (p, i) => { const u = hdOf(p, i); if (u) { const im = new Image(); im.src = u; } };   // the neighbours load ahead, so flicking through is instant
+    const showZoom = i => {
+      const n = cur.shots.length; zIndex = (i + n) % n; const mine = zIndex, hd = hdOf(cur, mine);
+      zimg.src = url(cur, cur.shots[mine]);   // the small picture appears at once...
+      zimg.alt = `${cur.title} screenshot ${mine + 1} of ${n}`; zcount.textContent = `${mine + 1} / ${n}`;
+      zoom.classList.toggle('single', n < 2);
+      if (hd) {                                // ...and is swapped for the sharper one the moment that has loaded and decoded
+        const big = new Image(); big.src = hd;
+        (big.decode ? big.decode() : new Promise((ok, no) => { big.onload = ok; big.onerror = no; })).then(() => { if (zIndex === mine && !zoom.hidden && big.naturalWidth) zimg.src = hd; }).catch(() => {});
+      }
+      if (n > 1) { warmHD(cur, (mine + 1) % n); warmHD(cur, (mine - 1 + n) % n); }
+    };
+    function openZoom(i) {
+      if (!zoom.hidden || !cur) return;
+      showZoom(i); zoom.hidden = false; if (strip) strip.setZoom(true);
+      try { history.pushState({ pvz: 1 }, ''); zPushed = true; } catch (err) { zPushed = false; }   // the phone's back gesture closes the enlarged view first
+      zoom.querySelector('.pz-close').focus({ preventScroll: true }); Sfx.play('select');
+    }
+    const closeZoom = viaPop => {
+      if (zoom.hidden) return;
+      zoom.hidden = true; zimg.removeAttribute('src');
+      if (strip) { strip.setZoom(false); strip.centerOn(zIndex); }   // the strip glides to the screenshot you were looking at
+      if (zPushed && !viaPop) goBack();
+      zPushed = false; Sfx.play('hover');
+      const s = body.querySelector(`.pv-set .pv-shot[data-i="${zIndex}"]`); if (s) s.focus({ preventScroll: true });
+    };
+    zoom.querySelector('.pz-close').addEventListener('click', () => closeZoom());
+    zoom.querySelector('.pz-prev').addEventListener('click', () => showZoom(zIndex - 1));
+    zoom.querySelector('.pz-next').addEventListener('click', () => showZoom(zIndex + 1));
+    let zs = null, zmoved = false;
+    zoom.addEventListener('pointerdown', e => { zmoved = false; zs = e.target.closest('button') ? null : { x: e.clientX, y: e.clientY }; });
+    zoom.addEventListener('pointermove', e => { if (zs && Math.hypot(e.clientX - zs.x, e.clientY - zs.y) > 10) zmoved = true; });
+    zoom.addEventListener('pointerup', e => {   // swipe sideways to change screenshot
+      if (!zs) return; const dx = e.clientX - zs.x, dy = e.clientY - zs.y; zs = null;
+      if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) showZoom(zIndex + (dx < 0 ? 1 : -1));
+    });
+    zoom.addEventListener('pointercancel', () => { zs = null; });
+    zoom.addEventListener('click', e => { if (zmoved) { zmoved = false; return; } if (e.target === zoom || e.target.classList.contains('pz-fig')) closeZoom(); });   // the dark space around it also closes
+
+    /* opening and closing the viewer */
     function openViewer(p, trigger) {
       if (!pv.hidden) return;
-      stopLive(); fill(p); from = trigger;
-      pv.hidden = false; root.classList.add('rv-open'); stage.scrollTop = 0; setSpeed();
+      stopLive(); cur = p; from = trigger; fill(p);
+      pv.hidden = false; root.classList.add('rv-open'); stage.scrollTop = 0; strip = makeStrip();
       try { history.pushState({ pv: p.id }, ''); pushed = true; } catch (err) { pushed = false; }   // so a phone's back gesture closes the viewer instead of leaving the page
       back.focus({ preventScroll: true });
     }
     const closeViewer = viaPop => {
       if (pv.hidden) return;
+      if (!zoom.hidden) { zoom.hidden = true; zPushed = false; }
+      if (strip) { strip.destroy(); strip = null; }
       pv.hidden = true; root.classList.remove('rv-open'); body.innerHTML = '';   // emptied so nothing keeps animating or loading behind the page
-      if (pushed && !viaPop) { try { history.back(); } catch (err) {} }
-      pushed = false;
+      if (pushed && !viaPop) goBack();
+      pushed = false; cur = null;
       if (from) from.focus({ preventScroll: true });
     };
     back.addEventListener('click', () => { Sfx.play('hover'); closeViewer(); });
-    stage.addEventListener('click', e => { if (e.target === stage || e.target === body) closeViewer(); });   // clicking the empty space around the content also goes back
-    addEventListener('popstate', () => { if (!pv.hidden) closeViewer(true); });
-    addEventListener('resize', () => { if (!pv.hidden) setSpeed(); });
+    addEventListener('popstate', () => {
+      if (selfBack) { selfBack--; return; }                  // that was us, closing something already
+      if (!zoom.hidden) closeZoom(true); else if (!pv.hidden) closeViewer(true);   // the browser's back: close the top layer only
+    });
+    addEventListener('resize', () => { if (!pv.hidden && strip) strip.measure(); });
     document.addEventListener('keydown', e => {
       if (pv.hidden) return;
-      if (e.key === 'Escape') { e.preventDefault(); closeViewer(); }
-      else if (e.key === 'Tab') {   // keep the keyboard inside the viewer
-        const f = [...pv.querySelectorAll('a[href], button')].filter(x => x.offsetParent !== null);
+      const trap = scope => {   // keep the keyboard inside this layer
+        const f = [...scope.querySelectorAll('a[href]:not([tabindex="-1"]), button:not([tabindex="-1"])')].filter(x => x.offsetParent !== null);
         if (!f.length) return;
         const i = f.indexOf(document.activeElement), next = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i === f.length - 1 ? 0 : i + 1);
         e.preventDefault(); f[next].focus();
+      };
+      if (!zoom.hidden) {
+        if (e.key === 'Escape') { e.preventDefault(); closeZoom(); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); showZoom(zIndex - 1); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); showZoom(zIndex + 1); }
+        else if (e.key === 'Tab') trap(zoom);
+        return;
       }
+      if (e.key === 'Escape') { e.preventDefault(); closeViewer(); }
+      else if (e.key === 'Tab') trap(pv);
     });
   }
 

@@ -173,7 +173,7 @@ a{color:inherit}
 .cartfloat{animation:float 3.2s ease-in-out infinite}
 @keyframes float{50%{transform:translateY(-0.5rem)}}
 .cartflip{perspective:43.75rem;transform-origin:50% 60%}
-.cart3d{--w:7.25rem;--h:8.25rem;--t:0.75rem;position:relative;width:var(--w);height:var(--h);transform-style:preserve-3d}
+.cart3d{--w:7.25rem;--h:8.25rem;--t:0.75rem;position:relative;width:var(--w);height:var(--h);transform-style:preserve-3d;-webkit-transform-style:preserve-3d}
 .art{height:100%;overflow:hidden;background:#fff;border:0.125rem solid #555;border-radius:0.375rem}
 .art img{display:block;width:100%;height:100%;object-fit:cover}
 .cartshadow{width:5.75rem;height:0.75rem;border-radius:50%;background:radial-gradient(rgba(0,0,0,.28),transparent 70%);animation:shd 3.2s ease-in-out infinite}
@@ -184,7 +184,7 @@ a.cartcap:active{transform:translateY(0.125rem)}
 .cartcap{max-width:9.375rem;padding:.1rem .6rem;text-align:center;font:400 .85rem/1.2 var(--pix);background:var(--d5);border:0.125rem solid var(--line);border-radius:0.375rem}
 
 /* ---------- Cartridge model: every face follows the outline exactly (including the cut corner) ---------- */
-.face{position:absolute;top:0;left:0;width:7.25rem;height:8.25rem;backface-visibility:hidden}
+.face{position:absolute;top:0;left:0;width:7.25rem;height:8.25rem;-webkit-backface-visibility:hidden;backface-visibility:hidden}
 .front{clip-path:polygon(0 0,84% 0,100% 15%,100% 100%,0 100%);transform:translateZ(0.375rem);padding:0.625rem 0.625rem 1.75rem;background:linear-gradient(#f4f6f9,#bfc4cc)}
 .front::after{content:"";position:absolute;left:0.75rem;right:0.75rem;bottom:0.5rem;height:0.625rem;border-radius:0.1875rem;background:repeating-linear-gradient(90deg,#8a8f98 0 0.25rem,#6d727b 0.25rem 0.4375rem)}
 .back{clip-path:polygon(100% 0,16% 0,0 15%,0 100%,100% 100%);transform:rotateY(180deg) translateZ(0.375rem);background:linear-gradient(#b5bac2,#8d939c)}
@@ -475,21 +475,22 @@ html{text-rendering:geometricPrecision}
   [data-page="contact"] .dsi-name{position:absolute;top:100%;left:50%;margin-top:0.6rem;transform:translateX(-50%);white-space:nowrap}
 }
 
-/* ---------- Experience & Projects: project cards, like video thumbnails ---------- */
+/* ---------- Experience & Projects: project cards, like video thumbnails ----------
+   The title and role sit on a solid panel attached to the thumbnail (not straight on the grid paper and its decorative icons), in full-contrast text. */
 .vgrid{max-width:62.5rem;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,19.5rem),1fr));gap:2rem clamp(1rem,3vw,1.75rem);align-items:start}
-.vcard{display:block;width:100%;padding:0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
+.vcard{display:block;width:100%;padding:0;overflow:hidden;background:var(--d5);color:var(--ink);font:inherit;text-align:left;cursor:pointer;border:0.125rem solid var(--line);border-radius:0.5rem;box-shadow:0 0.3125rem 0 var(--g3);
+  -webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;transition:transform .15s,box-shadow .15s;
   animation:rise2 .7s cubic-bezier(.2,1.1,.4,1) backwards;animation-delay:calc(var(--k,0)*.1s + .3s)}
 html[data-enter]:not(.reveal) .vcard{animation:none;opacity:0}
-.vcard:focus-visible{outline:none}
-.vthumb{position:relative;display:block;aspect-ratio:16/9;overflow:hidden;background:var(--d6);border:0.125rem solid var(--line);border-radius:0.5rem;box-shadow:0 0.3125rem 0 var(--g3);transition:transform .15s,box-shadow .15s}
-.vcard:hover .vthumb,.vcard:focus-visible .vthumb{transform:translateY(-0.1875rem);box-shadow:0 0.5rem 0 var(--g3)}
-.vcard:focus-visible .vthumb{outline:0.1875rem solid var(--blue);outline-offset:0.25rem}
-.vcard:active .vthumb{transform:translateY(0.1875rem);box-shadow:0 0.125rem 0 var(--g3)}
+.vcard:hover,.vcard:focus-visible{transform:translateY(-0.1875rem);box-shadow:0 0.5rem 0 var(--g3)}
+.vcard:focus-visible{outline:0.1875rem solid var(--blue);outline-offset:0.25rem}
+.vcard:active{transform:translateY(0.1875rem);box-shadow:0 0.125rem 0 var(--g3)}
+.vthumb{position:relative;display:block;aspect-ratio:16/9;overflow:hidden;background:var(--d6);border-bottom:0.125rem solid var(--line)}
 .vthumb img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
 .vprev{position:absolute;inset:0;opacity:0;transition:opacity .25s}
 .vthumb.playing .vprev{opacity:1}
 .vtag{position:absolute;right:0.5rem;top:0.5rem;padding:0 0.5rem;border-radius:0.25rem;background:rgba(20,20,24,.84);color:#fff;font:400 .78rem/1.55 var(--pix)}
-/* the thin bar along the bottom: slides back and forth while the preview loads, then counts through it (like YouTube's) */
+/* the thin bar along the bottom of the thumbnail: slides back and forth while the preview loads, then counts through it (like YouTube's) */
 .vbar{position:absolute;left:0;right:0;bottom:0;height:0.3125rem;opacity:0;transition:opacity .2s;background:rgba(0,0,0,.4)}
 .vbar::after{content:"";position:absolute;inset:0 auto 0 0;width:100%;background:linear-gradient(#69bcf0,#2f6ed0);transform:scaleX(0);transform-origin:left}
 .vthumb.loading .vbar,.vthumb.playing .vbar{opacity:1}
@@ -497,40 +498,92 @@ html[data-enter]:not(.reveal) .vcard{animation:none;opacity:0}
 .vthumb.playing .vbar::after{animation:vprog var(--secs,8s) linear infinite}
 @keyframes vload{from{transform:translateX(-100%)}to{transform:translateX(290%)}}
 @keyframes vprog{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-.vmeta{display:block;padding:0.85rem 0.2rem 0}
-.vtitle{display:block;font:400 1.2rem/1.3 var(--pix);color:var(--ink)}
-.vrole{display:block;margin-top:0.2rem;font-size:.95rem;font-weight:700;color:var(--g4)}
+.vmeta{display:block;padding:0.85rem 1rem 1rem;background:var(--d5)}
+.vtitle{display:block;font:400 1.3rem/1.3 var(--pix);color:var(--ink)}
+.vrole{display:block;margin-top:0.3rem;font-size:1rem;font-weight:700;line-height:1.35;color:var(--ink)}
 
 /* ---------- Project viewer: full screen on this page, built on the resume viewer's top bar ---------- */
 .rv.pv,html[data-theme="dark"] .rv.pv{background:linear-gradient(var(--grid) 0.0625rem,transparent 0.0625rem) 0 0/1rem 1rem,linear-gradient(90deg,var(--grid) 0.0625rem,transparent 0.0625rem) 0 0/1rem 1rem,var(--paper)}
 .pv .rv-stage{display:block}
 .pv-body{width:min(100%,62.5rem);margin:0 auto;padding:1.25rem clamp(0.75rem,3vw,1.5rem) calc(2.5rem + env(safe-area-inset-bottom,0px));animation:pvin .3s cubic-bezier(.2,1.1,.4,1)}
 @keyframes pvin{from{opacity:0;transform:translateY(1rem) scale(.985)}}
-.pv-act{justify-self:end;display:flex}
-.pv .rv-zoom.pv-ext{gap:0.4rem;padding:0.3rem 0.8rem 0.3rem 0.65rem;text-decoration:none}
-.pv-ext span{font:400 1.05rem var(--pix)}
 .pv-hero{display:block;width:100%;height:auto;aspect-ratio:960/300;object-fit:cover;background:var(--d6);border:0.125rem solid var(--line);border-radius:0.5rem;box-shadow:0 0.3125rem 0 var(--g3)}
-/* the screenshots drift slowly past; they stop while the pointer is over them, or with the pause button */
-.pv-strip{--sh:clamp(8.5rem,24vw,12rem);position:relative;margin-top:1.75rem}
-.pv-view{overflow:hidden;padding:0.35rem 0 0.7rem;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
-.pv-track{display:flex;width:max-content;animation:pvscroll var(--dur,80s) linear infinite}
+/* the link to the project: a big button right under the art, with the address itself beside it */
+.pv-visit{display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem 1.1rem;margin-top:1.4rem}
+.pv-visit .pill{display:inline-flex;align-items:center;gap:0.65rem;padding:0.7rem 1.6rem;font-size:1.2rem}
+.pv-visit .pill svg{width:1.2rem;height:1.2rem;flex:none}
+@media(max-width:560px){.pv-visit .pill{display:flex;justify-content:center;width:100%}}
+/* the screenshots: a carousel that drifts by itself and can be dragged, swiped or stepped with the arrows */
+.pv-strip{--sh:clamp(8.5rem,24vw,12rem);position:relative;margin-top:1.5rem}
+.pv-view{overflow:hidden;padding:0.35rem 0 0.7rem;touch-action:pan-y;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
+.pv-track{display:flex;width:max-content;will-change:transform}
 .pv-set{display:flex;gap:0.75rem;padding-right:0.75rem}
-.pv-track img{display:block;flex:none;height:var(--sh);aspect-ratio:16/9;width:auto;object-fit:cover;background:var(--d6);border:0.125rem solid var(--line);border-radius:0.375rem;box-shadow:0 0.1875rem 0 var(--g3);-webkit-user-drag:none}
-@keyframes pvscroll{to{transform:translateX(-50%)}}
-.pv-strip.paused .pv-track{animation-play-state:paused}
-@media(hover:hover){.pv-strip:hover .pv-track{animation-play-state:paused}}
-.pv-pause{position:absolute;right:0.75rem;bottom:1.2rem;z-index:2;display:grid;place-items:center;width:2.125rem;height:2.125rem;padding:0;border:0.125rem solid #1c4796;border-radius:50%;background:linear-gradient(#69bcf0,#2f6ed0);box-shadow:0 0.1875rem 0 #1c4796,inset 0 0.125rem 0 rgba(255,255,255,.5);color:#fff;transition:transform .08s}
-.pv-pause:active{transform:translateY(0.1875rem);box-shadow:0 0 0 #1c4796}
+.pv-shot{display:block;flex:none;margin:0;padding:0;border:0;background:none;cursor:zoom-in;border-radius:0.375rem}
+.pv-shot:focus-visible{outline:0.1875rem solid var(--blue);outline-offset:0.2rem}
+.pv-shot img{display:block;height:var(--sh);aspect-ratio:16/9;width:auto;object-fit:cover;background:var(--d6);border:0.125rem solid var(--line);border-radius:0.375rem;box-shadow:0 0.1875rem 0 var(--g3);-webkit-user-drag:none;pointer-events:none}
+.pv-strip.dragging .pv-view,.pv-strip.dragging .pv-shot{cursor:grabbing}
+.pv-nav,.pv-pause,.pz-nav,.pz-close{display:grid;place-items:center;padding:0;border:0.125rem solid #1c4796;border-radius:50%;background:linear-gradient(#69bcf0,#2f6ed0);box-shadow:0 0.1875rem 0 #1c4796,inset 0 0.125rem 0 rgba(255,255,255,.5);color:#fff;cursor:pointer;transition:transform .08s,filter .15s}
+.pv-nav:hover,.pv-pause:hover,.pz-nav:hover,.pz-close:hover{filter:brightness(1.1)}
+.pv-nav:active,.pv-pause:active,.pz-nav:active,.pz-close:active{transform:translateY(0.1875rem);box-shadow:0 0 0 #1c4796}
+.pv-nav{position:absolute;top:calc(50% - 0.35rem);z-index:2;width:2.5rem;height:2.5rem;margin-top:-1.25rem}
+.pv-nav:active{transform:translateY(0.1875rem)}
+.pv-prev{left:0.5rem}.pv-next{right:0.5rem}
+.pv-nav svg,.pz-nav svg,.pz-close svg{width:1.25rem;height:1.25rem}
+.pv-pause{position:absolute;right:0.75rem;bottom:1.2rem;z-index:2;width:2.125rem;height:2.125rem}
 .pv-pause svg{width:1rem;height:1rem}
-@media(prefers-reduced-motion:reduce){   /* no drifting: a plain strip you scroll yourself */
-  .pv-track{animation:none}
-  .pv-view{overflow-x:auto;-webkit-mask-image:none;mask-image:none}
-  .pv-set+.pv-set,.pv-pause{display:none}
-}
-.pv-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);gap:clamp(1rem,3vw,1.75rem);margin-top:1.5rem;align-items:start}
+@media(prefers-reduced-motion:reduce){.pv-pause{display:none}}   /* nothing drifts, so there is nothing to pause */
+/* the text boxes: contributions and engine stacked on the left, the long description on the right */
+.pv-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);grid-template-rows:auto 1fr;gap:clamp(1rem,3vw,1.75rem);margin-top:1.5rem;align-items:start}
+.pv-contrib{grid-column:1;grid-row:1}
+.pv-engine{grid-column:1;grid-row:2}
+.pv-about{grid-column:2;grid-row:1/3}
 .pv-box h2::before{content:attr(data-tag)}
 .pv-role{font-weight:800}
 .pv-box ul{margin:0.6rem 0 0;padding-left:1.2rem}
 .pv-box li+li{margin-top:0.35rem}
-@media(max-width:760px){.pv-cols{grid-template-columns:minmax(0,1fr)}}
-@media(max-width:560px){.pv-ext span{display:none}.pv .rv-zoom.pv-ext{padding:0.3rem 0.65rem}}
+.pv-eng{display:flex;align-items:center;gap:0.9rem}
+.pv-eng img{flex:none;width:3.5rem;height:3.5rem;filter:drop-shadow(0 0.1875rem 0 rgba(0,0,0,.18))}
+.pv-eng b{font:400 1.3rem/1.25 var(--pix);color:var(--ink)}
+@media(max-width:760px){
+  .pv-cols{grid-template-columns:minmax(0,1fr);grid-template-rows:none}
+  .pv-contrib,.pv-about,.pv-engine{grid-column:1;grid-row:auto}
+  .pv-contrib{order:1}.pv-about{order:2}.pv-engine{order:3}
+}
+
+/* ---------- Enlarged screenshot ---------- */
+.pv-zoom{position:fixed;inset:0;z-index:20;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:clamp(0.5rem,2vw,1.25rem);
+  padding:4rem clamp(0.75rem,3vw,1.75rem) calc(1.5rem + env(safe-area-inset-bottom,0px));background:rgba(8,9,12,.95);touch-action:none;animation:rvin .2s ease}
+.pv-zoom[hidden]{display:none}
+.pz-fig{margin:0;display:grid;justify-items:center;gap:0.8rem;min-width:0}
+.pz-img{display:block;width:min(100%,calc((100vh - 10rem) * 16 / 9));height:auto;aspect-ratio:16/9;object-fit:contain;background:#000;border:0.125rem solid rgba(255,255,255,.4);border-radius:0.5rem;box-shadow:0 0.75rem 2.5rem rgba(0,0,0,.55);-webkit-user-drag:none}
+.pz-count{font:400 1.05rem var(--pix);color:#e7eaf0}
+.pz-nav{width:3rem;height:3rem}
+.pz-close{position:absolute;top:max(0.75rem,env(safe-area-inset-top,0px));right:0.9rem;width:2.75rem;height:2.75rem}
+.pv-zoom.single .pz-nav{visibility:hidden}
+@media(max-width:620px){   /* phones: the arrows move below the picture */
+  .pv-zoom{grid-template-columns:1fr 1fr;grid-template-rows:minmax(0,1fr) auto;align-content:center;padding-top:4.25rem}
+  .pz-fig{grid-column:1/3;grid-row:1}
+  .pz-prev{grid-column:1;grid-row:2;justify-self:end;margin-right:0.5rem}
+  .pz-next{grid-column:2;grid-row:2;justify-self:start;margin-left:0.5rem}
+  .pz-img{width:100%}
+}
+@media(max-width:560px){.pv-nav{width:2.1rem;height:2.1rem;margin-top:-1.05rem}.pv-pause{width:1.9rem;height:1.9rem;bottom:1.1rem}.pv-nav svg{width:1.05rem;height:1.05rem}}
+
+/* ---------- Cartridge, projected: 3D that does not depend on the browser's nested "preserve-3d" ----------
+   Safari on a Mac can flatten nested 3D, which made the cartridge look 2D there. Here no face is nested inside another 3D space: each one carries
+   the WHOLE transform itself, in this order, outermost first: the perspective (vanishing point at the middle of the cartridge), the spin (--R, set from
+   script.js, around the middle), then the face's own place and tilt on the cartridge (the numbers below are the left / top / half-width / half-height and
+   the tilt each face has in the plain 3D version above). Faces turned away from you are hidden by backface-visibility, as before. */
+.cartflip.flat{perspective:none}
+.cart3d.flat{transform-style:flat;-webkit-transform-style:flat}
+.cart3d.flat .face,.cart3d.flat .edge{left:0;top:0;transform-origin:0 0;-webkit-backface-visibility:hidden;backface-visibility:hidden;
+  transform:translate(3.625rem,4.125rem) perspective(43.75rem) translate(-3.625rem,-4.125rem)
+            var(--R,translate(3.625rem,4.125rem) rotateY(0deg) translate(-3.625rem,-4.125rem))
+            translate(var(--cp-l,0rem),var(--cp-t,0rem)) translate(var(--cp-ox),var(--cp-oy)) var(--cp-s) translate(calc(var(--cp-ox) * -1),calc(var(--cp-oy) * -1))}
+.cart3d.flat .front{--cp-ox:3.625rem;--cp-oy:4.125rem;--cp-s:translateZ(0.375rem)}
+.cart3d.flat .back{--cp-ox:3.625rem;--cp-oy:4.125rem;--cp-s:rotateY(180deg) translateZ(0.375rem)}
+.cart3d.flat .et{--cp-l:0rem;--cp-t:-0.375rem;--cp-ox:3.045rem;--cp-oy:0.375rem;--cp-s:rotateX(90deg)}
+.cart3d.flat .ed{--cp-l:5.8219rem;--cp-t:0.2437rem;--cp-ox:0.84815rem;--cp-oy:0.375rem;--cp-s:rotateZ(46.85deg) rotateX(90deg)}
+.cart3d.flat .er{--cp-l:3.7437rem;--cp-t:4.3688rem;--cp-ox:3.50625rem;--cp-oy:0.375rem;--cp-s:rotateZ(90deg) rotateX(90deg)}
+.cart3d.flat .eb{--cp-l:0rem;--cp-t:7.875rem;--cp-ox:3.625rem;--cp-oy:0.375rem;--cp-s:rotateX(90deg) rotateY(180deg)}   /* turned to face outward, like the others */
+.cart3d.flat .el{--cp-l:-4.125rem;--cp-t:3.75rem;--cp-ox:4.125rem;--cp-oy:0.375rem;--cp-s:rotateZ(90deg) rotateX(90deg) rotateY(180deg)}   /* turned to face outward, like the others */
