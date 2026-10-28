@@ -54,7 +54,7 @@ const PROJECTS = [
     logo: 'PPlogo.png',
     preview: 'PPprev.gif', previewSecs: 9.7,
     shots: ['PP1.png', 'PP2.png', 'PP3.png', 'PP4.png', 'PP5.png', 'PP6.png', 'PP7.png'],
-    shotsHD: ['PP1_hd.webp', 'PP2_hd.webp', 'PP3_hd.webp', 'PP4_hd.webp', 'PP5_hd.webp', 'PP6_hd.webp', 'PP7_hd.webp'],
+    shotsHD: ['PP1_hd.png', 'PP2_hd.png', 'PP3_hd.png', 'PP4_hd.png', 'PP5_hd.png', 'PP6_hd.png', 'PP7_hd.png'],
     link: { url: 'https://marwan-e.itch.io/possession-protocol', label: 'View on itch.io' },
     engine: { name: 'Unreal Engine 5', icon: 'skills/unreal.svg' },
     contributions: {
