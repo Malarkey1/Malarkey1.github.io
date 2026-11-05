@@ -21,19 +21,64 @@ const GAMES = [
    An entry is either a file name, or [file name, crop focus, 'whole'].
    The cartridge screen is almost square, so wide photos are cropped to fit; the crop focus ("x% y%", 50% 50% = centre) picks which part
    stays in view. Add 'whole' as the third item to show the entire photo instead (nothing is cropped; the space above and below is
-   filled with a soft blurred copy of the photo). Use it for a photo where everybody has to be in frame. */
+   filled with a soft blurred copy of the photo). Use it for a photo where everybody has to be in frame.
+   Whatever a category holds, the cartridge picks from it the same way: a picture that hasn't been shown yet is far more likely to come up
+   than one that already has, and never the same one twice in a row (a category with just one picture simply keeps it).
+   experience   filled in automatically (see PICS.experience below the PERSONAL list): the thumbnail of every work experience and every project
+   resume       the document icon from the Resume tile's little cartridge
+   contact      the Gmail, LinkedIn and Discord logos (the same ones as on the Contact page) */
 const PICS = {
-  experience: ['images/experience-1.svg', 'images/experience-2.svg', 'images/experience-3.svg'],
-  resume: ['images/resume-1.svg', 'images/resume-2.svg', 'images/resume-3.svg'],
+  experience: [],
+  resume: ['images/resume-icon.svg'],
   about: [['images/aboutP1.webp', '14% 50%'], ['images/aboutP2.webp', '50% 50%'], ['images/aboutP3.webp', '50% 45%'],
           ['images/aboutP4.webp', '50% 50%', 'whole'], ['images/aboutP5.jpg', '50% 42%']],
-  contact: ['images/contact-1.svg', 'images/contact-2.svg', 'images/contact-3.svg']
+  contact: ['images/contact-gmail.svg', 'images/contact-linkedin.svg', 'images/contact-discord.svg']
 };
+
+/* ===== EDIT: where the project folders live. A project's  folder  (below) is a subfolder of this one: folder: 'KGD'  means  ProjEx/KGD/ ===== */
+const PROJ_DIR = 'ProjEx/';
+const projUrl = (p, f) => encodeURI(PROJ_DIR + p.folder + '/' + f);   // the address of one of a project's files
+
+/* ===== EDIT: your work experience, shown ABOVE the projects on the Experience & Projects page =====
+   Each entry works exactly like a project below (same card, same viewer, same fields), plus a few extras:
+     links        several buttons under the banner instead of one: [{ url, label }, ...]  (a project's single "link" still works)
+     tools        several boxes in the "Tools" panel instead of one "engine": [{ name, icon }, ...]
+     toolsTitle   optional: renames that panel (the default is 'Engine')
+     logoFit      'contain' shows a logo whole on white instead of cropping it to fill the card thumbnail
+     preview      leave it out for no hover preview (the card then only lifts when you hover it) */
+const EXPERIENCE = [
+  {
+    id: 'urban-expeditions',
+    title: 'Urban Expeditions',
+    role: 'Design Lead',
+    tag: 'Unity',
+    folder: 'UrbEx',
+    logo: 'urbexLogo.webp', logoFit: 'contain',
+    shots: ['urbex1.png', 'urbex2.png', 'urbex3.png', 'urbex4.png'],
+    links: [
+      { url: 'https://urbanexpeditions.com/', label: 'Company Website' },
+      { url: 'https://theurbanguide.com/home', label: 'The Urban Guide Game' },
+      { url: 'https://www.linkedin.com/in/peterodle/', label: 'Employer on LinkedIn' }
+    ],
+    tools: [{ name: 'Unity', icon: 'resume/skills/unity.svg' }, { name: 'Mapbox', icon: 'resume/skills/mapbox.png' }],
+    toolsTitle: 'Tools of Choice',
+    contributions: {
+      title: 'Responsibilities',
+      role: 'Design Lead',
+      items: ['Led independent early-stage product prototyping', 'Took initiative in exploring concepts', 'Evaluated technical possibilities', 'Developed preliminary prototypes']
+    },
+    about: [
+      'Urban Expeditions runs The Urban Guide, an experience that players sign up for to learn about and explore cities, either locally or remotely.',
+      'The game encourages players to leave their homes and visit landmarks around the world, so that one day they feel more confident exploring on trips. After informing players about these landmarks, the game quizzes them on what they have just learned, so they can earn points and redeem them for prizes.'
+    ]
+  }
+];
 
 /* ===== EDIT: the projects on the Experience & Projects page =====
    Each entry becomes a card (a thumbnail with the title and your role under it) and opens its own full-screen viewer when clicked.
-   All of a project's files live in ONE folder; the file names below are inside that folder. To add a project, copy the whole { ... } block,
-   give it a new id and folder, and fill it in.
+   All of a project's files live in ONE folder, inside the ProjEx folder (see PROJ_DIR above); the file names below are inside that folder.
+   To add a project, copy the whole { ... } block, give it a new id and folder, and fill it in. Its logo also joins the cartridge's pictures
+   when you hover Experience & Projects on the home page.
      logo         the thumbnail on the card and the big picture at the top of the viewer (a 16:9 picture fits best; wider art is cropped to its middle)
      tag          the small badge on the thumbnail, like a video's length (leave '' for none)
      preview      what plays when you hover the card (or long press it on a phone): a GIF or any picture file. previewSecs = how long it lasts
@@ -42,7 +87,13 @@ const PICS = {
      shotsHD      optional, same order as shots: bigger, sharper versions used ONLY when a screenshot is enlarged (the small one shows instantly,
                   then swaps to this when it has loaded). If one is missing, the normal one is used. For real sharpness, put the full-size
                   screenshots in here under these names
-     link         an optional button in the viewer, right under the logo art (set it to null to remove it)
+     link         an optional button in the viewer, centered right under the banner picture, or under the video if there is one (set it to null to remove it)
+     banner       optional: set to false to hide the big banner picture at the top of the viewer (the logo is still the card's thumbnail)
+     heroFit      optional: 'whole' shows the banner picture uncropped, in its own shape, instead of cropping it into the usual wide strip.
+                  Use it for a very wide title or logo that would otherwise lose its left and right edges
+     contributions.title   optional: renames the "Contributions" box (for example 'Technical Challenges')
+     video        optional: a gameplay video player in the viewer, between the banner and the link button / screenshots. { file: 'clip.mp4', poster: 'picture.jpg' };
+                  poster is the picture shown before it plays (leave it out to show the video's first frame). Leave the whole field out for no video
      engine       an optional "Engine" box in the viewer; icon is a small picture shown beside the name (leave '' for none) */
 const PROJECTS = [
   {
@@ -56,7 +107,7 @@ const PROJECTS = [
     shots: ['PP1.png', 'PP2.png', 'PP3.png', 'PP4.png', 'PP5.png', 'PP6.png', 'PP7.png'],
     shotsHD: ['PP1_HD.png', 'PP2_HD.png', 'PP3_HD.png', 'PP4_HD.png', 'PP5_HD.png', 'PP6_HD.png', 'PP7_HD.png'],
     link: { url: 'https://marwan-e.itch.io/possession-protocol', label: 'View on itch.io' },
-    engine: { name: 'Unreal Engine 5', icon: 'skills/unreal.svg' },
+    engine: { name: 'Unreal Engine 5', icon: 'resume/skills/unreal.svg' },
     contributions: {
       role: 'Multiplayer & Gameplay Programmer',
       items: ['Programmed multiplayer functionality', 'Programmed Character Classes', 'Added QoL features to enhance player immersion', 'Tested and debugged project']
@@ -65,8 +116,102 @@ const PROJECTS = [
       'Possession Protocol is a local co-op puzzle shooter. In order to progress through the levels, the player must hack robot to robot while eliminating all the enemies, as they deliver the payload at the end of each level.',
       'The game was built in collaboration between the Humber Game Programming and 3D Artist students. The purpose of making the game was to simulate the feeling and work ethics required to work in a real game studio, as the whole team consisted of 40 people. The game was then presented at LevelUp Toronto, where enthusiasts are able to play a large variety of game booths.'
     ]
+  },
+  {
+    id: 'boid-catchers',
+    title: 'Ubisoft Next 2025 - Boid Catchers',
+    role: 'Technical Programmer',
+    tag: 'C++',
+    folder: 'BoidCatcher',
+    logo: 'BClogo.jpg',
+    preview: 'UNgameplay.gif', previewSecs: 30,
+    video: { file: 'UNgameplay.mp4', poster: 'BCposter.jpg' },
+    shots: ['BC1.jpg', 'BC2.jpg', 'BC3.jpg', 'BC4.jpg'],
+    shotsHD: ['BC1_HD.jpg', 'BC2_HD.jpg', 'BC3_HD.jpg', 'BC4_HD.jpg'],
+    banner: false,   // no big picture at the top of the viewer: the video comes first
+    link: null,
+    engine: { name: 'Ubisoft Framework (C++)', icon: 'resume/skills/cpp.svg' },
+    contributions: {
+      title: 'Technical Challenges',
+      items: [
+        'Programming the boid AI',
+        'Real-time, physics-based movement driven by the mouse position',
+        'Collision detection for collecting boids',
+        'Turning a limited screen space into a continuous world space, so players can travel to areas that were once out of bounds',
+        'A parallax scrolling background'
+      ]
+    },
+    about: [
+      "Inspired by Agar.io and Slither.io, Boid Catchers is my entry for Ubisoft Next 2025, a competition that pushed me to grow my technical skills. In a single weekend, I had to learn Ubisoft's proprietary framework and prototype a game, working under pressure to come out with something unique.",
+      "The theme was \"Many Objects\", so I built the game around a swarm. You play as a lonely boid, using physics-based movement driven by your mouse to attract the other boids, who are just as lonesome as you are. Before time runs out, gather as many as you can by colliding with them. Winner takes all."
+    ]
+  },
+  {
+    id: 'knuckles-gravity-dome',
+    title: 'Knuckles Gravity Dome',
+    role: 'Gameplay Programmer & Designer',
+    tag: 'GameMaker',
+    folder: 'KGD',
+    logo: 'KGDlogo.png',
+    preview: 'KGDpreview.gif', previewSecs: 25.3,
+    video: { file: 'KGDgameplay.mp4' },
+    shots: ['KGD1.png', 'KGD2.png', 'KGD3.png', 'KGD4.png'],
+    banner: false,   // no big picture at the top of the viewer: the video comes first
+    link: { url: 'https://malarkeynotfound.itch.io/knuckles-gravity-dome', label: 'View on itch.io' },
+    engine: { name: 'GameMaker', icon: 'resume/skills/gamemaker.svg' },
+    contributions: {
+      role: 'Gameplay Programmer & Designer'
+    },
+    about: [
+      'Knuckles Gravity Dome was made for a One Button Game Jam, which was hosted to help provide games to people who have trouble accessing things like a controller, mouse, or keyboard because of the variety of inputs most games require. To solve that issue, the game could only have one input. A couple of the given themes were bugs and domes, so I decided to go for a Sonic-themed game about using gravity to avoid robotic bugs.',
+      'In Knuckles Gravity Dome, you must consistently switch your gravity to make your way through each level. Collecting papers throughout the level will lead to different rankings and endings upon completing the game. The playing field is even, but how will you gravitate towards winning?'
+    ]
+  },
+  {
+    id: 'scoots-loot',
+    title: "Scoot's Loot",
+    role: 'Sprite Designer',
+    tag: 'Game Jam',
+    folder: 'ScootsLoot',
+    logo: 'ScootTitle.png', logoFit: 'contain', heroFit: 'whole',   // the title art is very wide: the card thumbnail shows it whole on white, and the viewer banner takes its own shape so nothing is cropped
+    preview: 'ScootLootPrev.gif', previewSecs: 49.7,
+    shots: ['SL1.png', 'SL2.png', 'SL3.png'],
+    links: [
+      { url: 'https://shadowdev-games.itch.io/scoots-loot', label: 'View on itch.io' },
+      { url: 'https://drive.google.com/drive/folders/1wYyYGX37Oa3cwqSpmxRF7-HfOPW_mI4z?usp=sharing', label: 'Full Sprite Library' }
+    ],
+    tools: [{ name: 'Photoshop', icon: 'resume/skills/photoshop.svg' }],
+    toolsTitle: 'Tools',
+    contributions: {
+      role: 'Sprite Designer'
+    },
+    about: [
+      "Scoot's Loot was made for the Global Game Jam 2024, within 48 hours.",
+      "The sword, realizing its power with its newfound hands, goes on an adventure to escape the castle that it's been stuck in for years. Going through the castle to escape, it faces various enemies that could be easily beaten through an extremely valuable skill it learned: throwing. Beat enemies like Poobas and Willies using the resources around it, and beat Scoot to find out what Scoot's Loot is. Is it treasure? Death? Freedom? Play to find out!"
+    ]
   }
 ];
+
+/* ===== EDIT: the "Side Quests" section (personal projects), below Projects on the Experience & Projects page =====
+   These are simple link cards: clicking one opens its url in a new tab instead of the full viewer, so none of the viewer fields are needed.
+     title, role  the two lines under the thumbnail
+     url          where the card goes
+     tag          the small badge on the thumbnail (leave '' for none)
+     logo         optional thumbnail picture. Put it in a folder inside ProjEx and add  folder: 'FolderName'  next to it. Leave both out and the card shows its
+                  title on a plain blue panel instead. (Heading text: experience.html.) */
+const PERSONAL = [
+  {
+    id: 'project-mold',
+    title: 'Project: Mold',
+    role: 'Development Vlogs',
+    tag: 'YouTube',
+    url: 'https://youtube.com/playlist?list=PLeslqvGEtjV4&si=IE9uboco__iQXglY'
+  }
+];
+
+/* The Experience & Projects cartridge cycles through the thumbnail of every work experience and project above (not the PERSONAL side quests, so
+   Project: Mold stays out). Each is shown whole, because the thumbnails are wide and some are title art that cropping would cut off. */
+PICS.experience = EXPERIENCE.concat(PROJECTS).map(p => [projUrl(p, p.logo), '50% 50%', 'whole']);
 
 /* ===== EDIT: sound effects. The files live in the "web sounds" folder. Each entry is [file, volume from 0 to 1] ===== */
 const SFX_DIR = 'web sounds/';
@@ -411,7 +556,7 @@ addEventListener('DOMContentLoaded', () => {
 
   /* ---------- Shared chrome: status bar (+ dock and banner on inner pages) ---------- */
   document.body.insertAdjacentHTML('afterbegin',
-    `<header class="topbar"><a class="user" href="index.html"><img src="mii-head.png" alt=""><span>${esc(SITE.name)}</span></a>
+    `<header class="topbar"><a class="user" href="index.html"><img src="mii/mii-head.png" alt=""><span>${esc(SITE.name)}</span></a>
      <span class="net">${WIFI}<b>${esc(SITE.tag)}</b></span>
      <div class="status"><span id="clock"></span><button class="mode" id="snd" type="button"></button><button class="mode" id="mode" type="button"></button>${BATT}</div></header>`);
   const tickClock = () => {   // same text as before; the pieces are separate so a narrow phone can drop the date and weekday (see style.css)
@@ -795,7 +940,7 @@ addEventListener('DOMContentLoaded', () => {
         img.style.objectPosition = p.pos; img.src = p.src; if (!quiet) Sfx.play('swap');   // the sound lands the moment the picture changes
       });
     };
-    setInterval(() => { if (!document.hidden && cat) swap(); }, 4500);
+    setInterval(() => { if (!document.hidden && cat && (PICS[cat] || []).length > 1) swap(); }, 4500);   // (a category with a single picture, like Resume, has nothing to swap to)
 
     // slow turn by default; dragging spins it faster and a flick lets it coast; changing category resets it to face front
     const BASE = reduce ? 0 : 52;
@@ -1043,32 +1188,34 @@ addEventListener('DOMContentLoaded', () => {
      Hover a card (or long press it on a phone) and its preview plays over the thumbnail. Click it for the full viewer: the logo art, the
      screenshots drifting past, and the full description. Everything stays on this page; the viewer works like the resume viewer
      (the Back button, Esc, or the phone's back gesture closes it). */
-  const grid = $('#projects');
+  const grid = $('#projects') || $('#experience');
   if (grid) {
     const HOVER_DELAY = 280,   // ms the mouse rests on a card before its preview starts
           LONG_PRESS = 400,    // ms a finger holds a card before its preview starts
           STICKY_MS = 15000,   // a preview started by a long press keeps playing this long (or until you tap somewhere else)
           STRIP_SPEED = 30;    // how fast the screenshots drift in the viewer, in px per second (smaller = slower)
     const h = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-    const url = (p, f) => encodeURI(p.folder + '/' + f);
+    const url = projUrl;   // a project's file: ProjEx/<folder>/<file>
 
     /* the cards */
-    const cards = PROJECTS.map((p, i) => {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'vcard'; b.style.setProperty('--k', Math.min(i, 4));
-      b.setAttribute('aria-haspopup', 'dialog');
-      b.innerHTML = `<span class="vthumb"><img class="vlogo" src="${url(p, p.logo)}" alt="" decoding="async"><span class="vbar"></span>${p.tag ? `<span class="vtag">${h(p.tag)}</span>` : ''}</span>`
+    const cards = [[EXPERIENCE, $('#experience')], [PROJECTS, $('#projects')], [PERSONAL, $('#personal')]].flatMap(([list, host]) => !host ? [] : list.map((p, i) => {
+      const b = document.createElement(p.url ? 'a' : 'button');   // a card with a url is a plain link (new tab); every other card opens the viewer
+      if (p.url) { b.href = p.url; b.target = '_blank'; b.rel = 'noopener'; b.draggable = false; b.setAttribute('aria-label', `${p.title}, ${p.role} (opens in a new tab)`); }
+      else { b.type = 'button'; b.setAttribute('aria-haspopup', 'dialog'); }
+      b.className = 'vcard'; b.style.setProperty('--k', Math.min(i, 4));
+      const pic = p.logo ? `<img class="vlogo${p.logoFit === 'contain' ? ' contain' : ''}" src="${url(p, p.logo)}" alt="" decoding="async">` : `<span class="vnote"><span>${h(p.title)}</span></span>`;   // no logo: the title on a plain panel (the title sits in its own inner span: in a flex box, the pixel-type tidier's pieces of text would each become a separate item and the spaces between words would vanish)
+      b.innerHTML = `<span class="vthumb">${pic}<span class="vbar"></span>${p.tag ? `<span class="vtag">${h(p.tag)}</span>` : ''}</span>`
         + `<span class="vmeta"><span class="vtitle">${h(p.title)}</span><span class="vrole">${h(p.role)}</span></span>`;
-      grid.appendChild(b);
+      host.appendChild(b);
       return [p, b];
-    });
+    }));
 
     /* Previews can be big (a GIF is several MB), so they download in the background only on a good connection (not on mobile data or Data Saver),
        and always the moment someone shows interest in a card. */
     const net = navigator.connection, goodNet = !net || (!net.saveData && net.type !== 'cellular' && !/(^|-)[23]g$/.test(net.effectiveType || ''));
     const warmed = new Set(), keep = [];
     const warm = p => { if (!p.preview || warmed.has(p.id)) return; warmed.add(p.id); const im = new Image(); im.src = url(p, p.preview); keep.push(im); };
-    if (goodNet) (window.requestIdleCallback || (f => setTimeout(f, 2500)))(() => PROJECTS.forEach(warm), { timeout: 5000 });
+    if (goodNet) (window.requestIdleCallback || (f => setTimeout(f, 2500)))(() => EXPERIENCE.concat(PROJECTS).forEach(warm), { timeout: 5000 });
 
     /* previews: only one plays at a time */
     let live = null;   // { card, stop }
@@ -1077,6 +1224,7 @@ addEventListener('DOMContentLoaded', () => {
     document.addEventListener('visibilitychange', () => { if (document.hidden) stopLive(); });
 
     cards.forEach(([p, b]) => {
+      if (p.url) return;   // a link card has no preview and no viewer
       const thumb = b.querySelector('.vthumb'), bar = thumb.querySelector('.vbar');
       let delay = 0, auto = 0, token = 0, shown = null;
       const stop = () => {
@@ -1144,20 +1292,22 @@ addEventListener('DOMContentLoaded', () => {
     const goBack = () => { selfBack++; try { history.back(); } catch (err) { selfBack--; } };   // we close things ourselves; the popstate this causes must not close anything else
 
     const fill = p => {
-      const c = p.contributions || {}, n = p.shots.length, eng = p.engine;
+      const c = p.contributions || {}, n = p.shots.length, tools = p.tools || (p.engine ? [p.engine] : []), links = p.links || (p.link ? [p.link] : []);
       const real = p.shots.map((f, i) => `<button type="button" class="pv-shot" data-i="${i}" aria-label="Enlarge screenshot ${i + 1} of ${n}"><img src="${url(p, f)}" alt="" decoding="async" draggable="false"></button>`).join('');
       const copy = p.shots.map((f, i) => `<span class="pv-shot" data-i="${i}" aria-hidden="true"><img src="${url(p, f)}" alt="" decoding="async" draggable="false"></span>`).join('');   // more sets, so the loop has no seam
-      body.innerHTML = `<img class="pv-hero" src="${url(p, p.logo)}" alt="${h(p.title)}">`
-        + (p.link ? `<div class="pv-visit"><a class="pill" href="${h(p.link.url)}" target="_blank" rel="noopener">${EXT}<span>${h(p.link.label)}</span></a></div>` : '')
+      body.innerHTML = (p.banner === false ? '' : `<img class="pv-hero${p.logoFit === 'contain' ? ' contain' : ''}${p.heroFit === 'whole' ? ' whole' : ''}" src="${url(p, p.logo)}" alt="${h(p.title)}">`)
+        + (p.video ? `<div class="pv-video"><video controls playsinline preload="metadata"${p.video.poster ? ` poster="${url(p, p.video.poster)}"` : ''} src="${url(p, p.video.file)}" aria-label="${h(p.title)} gameplay video"></video></div>` : '')
+        + (links.length ? `<div class="pv-visit">${links.map(l => `<a class="pill" href="${h(l.url)}" target="_blank" rel="noopener">${EXT}<span>${h(l.label)}</span></a>`).join('')}</div>` : '')
         + (n ? `<div class="pv-strip" role="group" aria-roledescription="carousel" aria-label="Screenshots of ${h(p.title)}"><div class="pv-view"><div class="pv-track"><div class="pv-set">${real}</div><div class="pv-set" aria-hidden="true">${copy}</div></div></div>`
              + `<button type="button" class="pv-nav pv-prev" aria-label="Previous screenshot">${CHEV_L}</button><button type="button" class="pv-nav pv-next" aria-label="Next screenshot">${CHEV_R}</button>`
              + `<button type="button" class="pv-pause" aria-pressed="false" aria-label="Pause the screenshots">${PAUSE}</button></div>` : '')
         + `<div class="pv-cols">`
-        + `<section class="txt pv-box pv-contrib"><h2 data-tag="ROLE">Contributions</h2>${c.role ? `<p class="pv-role">${h(c.role)}</p>` : ''}${(c.items || []).length ? `<ul>${c.items.map(t => `<li>${h(t)}</li>`).join('')}</ul>` : ''}</section>`
+        + `<section class="txt pv-box pv-contrib"><h2 data-tag="ROLE">${h(c.title || 'Contributions')}</h2>${c.role ? `<p class="pv-role">${h(c.role)}</p>` : ''}${(c.items || []).length ? `<ul>${c.items.map(t => `<li>${h(t)}</li>`).join('')}</ul>` : ''}</section>`
         + `<section class="txt pv-box pv-about"><h2 data-tag="BRIEFING">About</h2>${(p.about || []).map(t => `<p>${h(t)}</p>`).join('')}</section>`
-        + (eng ? `<section class="txt pv-box pv-engine"><h2 data-tag="TOOLS">Engine</h2><div class="pv-eng">${eng.icon ? `<img src="${h(eng.icon)}" alt="" width="56" height="56">` : ''}<b>${h(eng.name)}</b></div></section>` : '')
+        + (tools.length ? `<section class="txt pv-box pv-engine"><h2 data-tag="TOOLS">${h(p.toolsTitle || 'Engine')}</h2>${tools.map(t => `<div class="pv-eng">${t.icon ? `<img src="${h(t.icon)}" alt="" width="56" height="56">` : ''}<b>${h(t.name)}</b></div>`).join('')}</section>` : '')
         + `</div>`;
       vtitle.textContent = p.title;
+      body.querySelectorAll('video').forEach(v => { v.muted = Sfx.muted; });   // the speaker button in the status bar also mutes a project's video
       Type.tune(pv);
     };
 
@@ -1296,6 +1446,7 @@ addEventListener('DOMContentLoaded', () => {
       if (pv.hidden) return;
       if (!zoom.hidden) { zoom.hidden = true; zPushed = false; }
       if (strip) { strip.destroy(); strip = null; }
+      body.querySelectorAll('video').forEach(v => { try { v.pause(); } catch (err) {} });   // never keep playing behind the page
       pv.hidden = true; root.classList.remove('rv-open'); body.innerHTML = '';   // emptied so nothing keeps animating or loading behind the page
       if (pushed && !viaPop) goBack();
       pushed = false; cur = null;
@@ -1310,7 +1461,7 @@ addEventListener('DOMContentLoaded', () => {
     document.addEventListener('keydown', e => {
       if (pv.hidden) return;
       const trap = scope => {   // keep the keyboard inside this layer
-        const f = [...scope.querySelectorAll('a[href]:not([tabindex="-1"]), button:not([tabindex="-1"])')].filter(x => x.offsetParent !== null);
+        const f = [...scope.querySelectorAll('a[href]:not([tabindex="-1"]), button:not([tabindex="-1"]), video[controls]')].filter(x => x.offsetParent !== null);
         if (!f.length) return;
         const i = f.indexOf(document.activeElement), next = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i === f.length - 1 ? 0 : i + 1);
         e.preventDefault(); f[next].focus();
@@ -1362,8 +1513,8 @@ addEventListener('DOMContentLoaded', () => {
 
   /* ---------- Touch ripple + iris transition on internal links ---------- */
   /* ---------- Sounds for the menu "tabs" ---------- */
-  const TABS = '.tile, .dock a';                     // these make the hover sound
-  const TOGGLES = '.seg button';                      // the IT / Game Dev toggle: the hover sound plays when you pick one, not when you hover
+  const TABS = '.tile, .dock a, .vcard';             // these make the hover sound (.vcard = the project cards)
+  const TOGGLES = '.seg button, .pv-nav, .pz-nav';    // the hover sound plays when you CLICK these, not when you hover: the IT / Game Dev toggle, and the side arrows that step through a project's screenshots (in the viewer and when one is enlarged)
   const SELECTS = '.tile, .dock a, .user, .cartcap, .vcard'; // these make the select sound when clicked (the name top left, except on the home menu; the caption under the cartridge; NOT the IT / Game Dev toggle)
   document.addEventListener('pointerover', e => {
     if (e.pointerType === 'touch') return;

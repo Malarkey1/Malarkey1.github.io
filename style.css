@@ -508,13 +508,19 @@ html[data-enter]:not(.reveal) .vcard{animation:none;opacity:0}
 .pv-body{width:min(100%,62.5rem);margin:0 auto;padding:1.25rem clamp(0.75rem,3vw,1.5rem) calc(2.5rem + env(safe-area-inset-bottom,0px));animation:pvin .3s cubic-bezier(.2,1.1,.4,1)}
 @keyframes pvin{from{opacity:0;transform:translateY(1rem) scale(.985)}}
 .pv-hero{display:block;width:100%;height:auto;aspect-ratio:960/300;object-fit:cover;background:var(--d6);border:0.125rem solid var(--line);border-radius:0.5rem;box-shadow:0 0.3125rem 0 var(--g3)}
-/* the link to the project: a big button right under the art, with the address itself beside it */
-.pv-visit{display:flex;flex-wrap:wrap;align-items:center;gap:0.75rem 1.1rem;margin-top:1.4rem}
+/* the link to the project: a big button centered right under the banner (or under the video, when a project has one) */
+.pv-visit{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:0.75rem 1.1rem;margin-top:1.4rem}
 .pv-visit .pill{display:inline-flex;align-items:center;gap:0.65rem;padding:0.7rem 1.6rem;font-size:1.2rem}
 .pv-visit .pill svg{width:1.2rem;height:1.2rem;flex:none}
 @media(max-width:560px){.pv-visit .pill{display:flex;justify-content:center;width:100%}}
+/* optional gameplay video (a project's "video" field): framed like the banner, and sized from the screenshot height */
+.pv-video{--times:2;   /* EDIT: how many times taller the video is than one screenshot (1.5 = smaller, 3 = bigger) */
+  width:min(100%,calc(var(--sh)*16/9*var(--times)));margin:1.5rem auto 0;overflow:hidden;background:#000;border:0.125rem solid var(--line);border-radius:0.5rem;box-shadow:0 0.3125rem 0 var(--g3)}
+.pv-body>.pv-video:first-child{margin-top:0}   /* when the banner is hidden the video leads the page */
+.pv-video video{display:block;width:100%;height:auto;aspect-ratio:16/9;background:#000}
 /* the screenshots: a carousel that drifts by itself and can be dragged, swiped or stepped with the arrows */
-.pv-strip{--sh:clamp(8.5rem,24vw,12rem);position:relative;margin-top:1.5rem}
+.pv-body{--sh:clamp(8.5rem,24vw,12rem)}   /* the height of one screenshot in the carousel; the video's size is worked out from it too */
+.pv-strip{position:relative;margin-top:1.5rem}
 .pv-view{overflow:hidden;padding:0.35rem 0 0.7rem;touch-action:pan-y;cursor:grab;-webkit-user-select:none;user-select:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
 .pv-track{display:flex;width:max-content;will-change:transform}
 .pv-set{display:flex;gap:0.75rem;padding-right:0.75rem}
@@ -587,3 +593,22 @@ html[data-enter]:not(.reveal) .vcard{animation:none;opacity:0}
 .cart3d.flat .er{--cp-l:3.7437rem;--cp-t:4.3688rem;--cp-ox:3.50625rem;--cp-oy:0.375rem;--cp-s:rotateZ(90deg) rotateX(90deg)}
 .cart3d.flat .eb{--cp-l:0rem;--cp-t:7.875rem;--cp-ox:3.625rem;--cp-oy:0.375rem;--cp-s:rotateX(90deg) rotateY(180deg)}   /* turned to face outward, like the others */
 .cart3d.flat .el{--cp-l:-4.125rem;--cp-t:3.75rem;--cp-ox:4.125rem;--cp-oy:0.375rem;--cp-s:rotateZ(90deg) rotateX(90deg) rotateY(180deg)}   /* turned to face outward, like the others */
+
+/* ---------- Experience & Projects: the sections (Work Experience, Projects, Side Quests) ---------- */
+.vsec{max-width:62.5rem;margin:0 auto}
+.vsec+.vsec{margin-top:clamp(2.5rem,7vw,3.75rem)}
+.vsec-h{display:flex;align-items:center;gap:1rem;margin:0 0 1.25rem;font:400 clamp(1.4rem,3.6vw,1.9rem)/1.2 var(--pix);color:var(--ink);text-shadow:0.125rem 0.125rem 0 var(--g2)}
+/* the title text sits in a <span> so only the span and the blue line are flex items; otherwise the gap would land between the letters the pixel-type tidier splits apart */
+.vsec-h>span{min-width:0}
+.vsec-h::after{content:"";flex:1;height:0.25rem;border-radius:62.4375rem;background:linear-gradient(#69bcf0,#2f6ed0);box-shadow:0 0.125rem 0 #1c4796}
+/* a logo shown whole (logoFit: 'contain') sits on white, as a thumbnail and as the banner */
+.vthumb img.contain{object-fit:contain;background:#fff}
+.pv-hero.contain{background:#fff}
+/* heroFit: 'whole': a very wide title shown uncropped in the viewer banner; the banner takes the picture's own shape instead of the usual wide strip */
+.pv-hero.whole{aspect-ratio:auto;object-fit:contain}
+/* Side Quests: a card that is a link (an <a>), and the plain panel it shows when it has no logo picture */
+a.vcard{text-decoration:none}
+.vnote{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:1rem;text-align:center;font:400 clamp(1.5rem,4.4vw,2rem)/1.2 var(--pix);color:#fff;text-shadow:0.125rem 0.125rem 0 rgba(0,0,0,.45);background:linear-gradient(135deg,#2f6ed0,#1c4796)}
+/* several tools in the Tools panel */
+.pv-eng+.pv-eng{margin-top:0.9rem}
+.pv-eng img{object-fit:contain}

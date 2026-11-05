@@ -14,9 +14,23 @@
 <main class="sub">
   <h1 class="page-title">Experience &amp; Projects</h1>
 
-  <!-- Each project is one card here, like a video thumbnail: hover it (or long press on a phone) for a preview, click it for the full viewer.
-       The cards are built from the PROJECTS list near the top of script.js. To add a project, copy its { ... } block there; nothing to change in this file. -->
-  <div class="vgrid" id="projects" aria-label="Projects"></div>
+  <!-- Three sections, one below the other. Every card in the grids is built from script.js: the EXPERIENCE list fills "Work Experience", the
+       PROJECTS list fills "Projects" and the PERSONAL list fills "Side Quests" (link cards that open in a new tab; rename the heading here). Hover a card (or long press it on a phone) for a preview if it has one, click it for the full viewer.
+       To add a job or a project, copy its { ... } block in script.js; nothing to change in this file. -->
+  <section class="vsec" aria-labelledby="exp-h">
+    <h2 class="vsec-h" id="exp-h"><span>Work Experience</span></h2>
+    <div class="vgrid" id="experience" aria-label="Work experience"></div>
+  </section>
+
+  <section class="vsec" aria-labelledby="proj-h">
+    <h2 class="vsec-h" id="proj-h"><span>Projects</span></h2>
+    <div class="vgrid" id="projects" aria-label="Projects"></div>
+  </section>
+
+  <section class="vsec" aria-labelledby="pers-h">
+    <h2 class="vsec-h" id="pers-h"><span>Side Quests</span></h2>
+    <div class="vgrid" id="personal" aria-label="Side quests"></div>
+  </section>
 </main>
 </body>
 </html>
